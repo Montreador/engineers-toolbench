@@ -389,6 +389,23 @@
   .pfc-ghost { stroke: #4a5262; stroke-width: 2; stroke-dasharray: 3 5; }
   .pfc-bracket { stroke: var(--danger); stroke-width: 1.4; }
 
+  /* ---------------- BLOWN FILM PROCESS TOOL ---------------- */
+  .bf-svg { width: 100%; height: auto; max-height: 230px; display: block; }
+  .bf-die { fill: #2c3240; stroke: #3a4150; stroke-width: 1.5; }
+  .bf-bubble-fill { fill: #20252e; }
+  .bf-bubble-outline { fill: none; stroke: var(--cyan); stroke-width: 2; }
+  .bf-nip { stroke: #aeb6c2; stroke-width: 3; stroke-linecap: round; }
+  .bf-flow { fill: none; stroke: var(--amber); stroke-width: 2; stroke-dasharray: 1 8; stroke-linecap: round; animation: chainmove 1s linear infinite; }
+  .bf-lbl { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+  .bf-lbl-hi { fill: var(--cyan); }
+
+  /* ---------------- BUBBLE STRESS TOOL ---------------- */
+  .bs-svg { width: 100%; height: auto; max-height: 200px; display: block; }
+  .bs-wall { stroke: #aeb6c2; stroke-width: 2.5; fill: none; }
+  .bs-arrow { stroke: var(--amber); stroke-width: 2; }
+  .bs-arrow-head { fill: var(--amber); }
+  .bs-lbl { font-family: var(--mono); font-size: 11px; }
+
   :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
 
   /* ---------------- RESPONSIVE ---------------- */
@@ -3988,9 +4005,316 @@
   };
 
   /* ============================================================
+     TOOL 20 — BLOWN FILM PROCESS
+     ============================================================ */
+  const BlownFilmProcess = {
+    id: "blownfilm",
+    discipline: "PLASTICS PROCESSING",
+    title: "Blown film process calculator",
+    subtitle: "Set the die geometry, layflat, gauge, and line speed to get blow-up ratio, draw-down, output rate, and die wall shear rate — the visual tracks the die-to-bubble-to-nip geometry.",
+
+    mount(root) {
+      const RESINS = [
+        { name: "LDPE", rho: 750 }, { name: "LLDPE", rho: 735 }, { name: "HDPE", rho: 730 },
+        { name: "PP", rho: 720 }, { name: "Custom", rho: null },
+      ];
+      const raw = { Ddie: "200", hdie: "1.0", Wlay: "600", tfilm: "50", Vline: "60", rho: "750", n: "0.4" };
+      const chans = {};
+
+      root.innerHTML = "";
+      const panel = el("div", "panel");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>BLOWN FILM LINE</h2>
+          <div class="legend"><span><i class="dot set"></i> SET</span><span><i class="dot meas"></i> MEASURED</span></div>
+        </div>
+        <div class="selectors">
+          <div class="seg-field"><span class="seg-label">RESIN</span><select class="mat-select"></select></div>
+        </div>
+        <div class="gear-layout">
+          <div class="gear-stage">
+            <div class="bf-viz"></div>
+            <div class="ratio-badge"><div class="r empty">——</div><div class="lbl">BLOW-UP RATIO</div></div>
+          </div>
+          <div class="channels cols-2 bf-inputs"></div>
+        </div>
+        <div class="outputs-wrap"><div class="channels cols-3 bf-outputs"></div></div>
+        <div class="status"><div class="status-msg"></div><button class="btn-reset">CLEAR</button></div>`;
+      root.appendChild(panel);
+      root.appendChild(el("p", "note", `<span class="k">i</span><span>Draw-down assumes volume is conserved from the die to the finished film (no shrinkage). Wall shear rate uses the Newtonian slit approximation γ̇ = 6Q/(w·h²); enter a power-law index below 1 for shear-thinning melts to see the Rabinowitsch-corrected value alongside it.</span>`));
+
+      const vizEl = panel.querySelector(".bf-viz");
+      const inputsEl = panel.querySelector(".bf-inputs");
+      const outsEl = panel.querySelector(".bf-outputs");
+      const statusEl = panel.querySelector(".status-msg");
+      const ratioEl = panel.querySelector(".ratio-badge .r");
+      const ratioLbl = panel.querySelector(".ratio-badge .lbl");
+      const resinSel = panel.querySelector(".mat-select");
+
+      RESINS.forEach((r, i) => { const o = el("option"); o.value = i; o.textContent = r.name + (r.rho ? ` · ${r.rho} kg/m³` : ""); resinSel.appendChild(o); });
+      resinSel.addEventListener("change", () => {
+        const r = RESINS[+resinSel.value];
+        if (r.rho != null) { raw.rho = String(r.rho); if (chans.rho) chans.rho.input.value = raw.rho; }
+        recompute();
+      });
+
+      const inDefs = [
+        { key: "Ddie", sym: "Dₑ", name: "Die diameter", unit: "mm" },
+        { key: "hdie", sym: "h", name: "Die gap", unit: "mm" },
+        { key: "Wlay", sym: "W", name: "Layflat width", unit: "mm" },
+        { key: "tfilm", sym: "t", name: "Film gauge", unit: "µm" },
+        { key: "Vline", sym: "Vₗ", name: "Line speed", unit: "m/min" },
+        { key: "rho", sym: "ρ", name: "Melt density", unit: "kg/m³" },
+        { key: "n", sym: "n", name: "Power-law index", unit: "0–1" },
+      ];
+      inDefs.forEach(d => {
+        const c = makeChannel(d); chans[d.key] = c; inputsEl.appendChild(c.el);
+        if (raw[d.key]) chInput(c, raw[d.key]); else chEmpty(c);
+        c.input.addEventListener("input", e => { raw[d.key] = e.target.value; recompute(); });
+      });
+
+      const outDefs = [
+        { key: "Vdie", sym: "Vₑ", name: "Die exit velocity", unit: "m/min" },
+        { key: "ddr", sym: "DDR", name: "Draw-down ratio", unit: ": 1" },
+        { key: "out", sym: "Ṁ", name: "Output rate", unit: "kg/hr" },
+        { key: "spec", sym: "q", name: "Specific output", unit: "kg/hr/mm" },
+        { key: "shearApp", sym: "γ̇ₐ", name: "Wall shear, Newtonian", unit: "1/s" },
+        { key: "shearTrue", sym: "γ̇ₜ", name: "Wall shear, corrected", unit: "1/s" },
+      ];
+      outDefs.forEach(d => { const c = makeChannel(d); chans[d.key] = c; outsEl.appendChild(c.el); chPending(c); });
+
+      const num = k => { const v = parseFloat(raw[k]); return Number.isNaN(v) ? undefined : v; };
+
+      function recompute() {
+        const Ddie = num("Ddie"), hdie = num("hdie"), Wlay = num("Wlay"), tfilm = num("tfilm"), Vline = num("Vline"), rho = num("rho");
+        const n = num("n");
+        const need = [];
+        if (!(Ddie > 0)) need.push("die diameter");
+        if (!(hdie > 0)) need.push("die gap");
+        if (!(Wlay > 0)) need.push("layflat width");
+        if (!(tfilm > 0)) need.push("film gauge");
+        if (!(Vline > 0)) need.push("line speed");
+        if (!(rho > 0)) need.push("melt density");
+
+        if (need.length) {
+          ratioEl.textContent = "——"; ratioEl.classList.add("empty"); ratioLbl.textContent = "BLOW-UP RATIO";
+          outDefs.forEach(d => chPending(chans[d.key]));
+          statusEl.className = "status-msg";
+          statusEl.textContent = "Add the " + need.join(", ") + " to solve.";
+          drawBubble(null);
+          return;
+        }
+
+        const Ddie_m = Ddie * 1e-3, hdie_m = hdie * 1e-3, tfilm_m = tfilm * 1e-6, Vline_ms = Vline / 60;
+        const Dbubble_mm = 2 * Wlay / Math.PI;
+        const BUR = Dbubble_mm / Ddie;
+
+        ratioEl.textContent = `${fmt(BUR)} : 1`; ratioEl.classList.remove("empty");
+        ratioLbl.textContent = "BLOW-UP RATIO";
+
+        const Vdie_ms = (BUR * tfilm_m * Vline_ms) / hdie_m;
+        const DDR = Vline_ms / Vdie_ms;
+        const Q = Math.PI * Ddie_m * hdie_m * Vdie_ms;
+        const massRate = rho * Q;
+        const outKgHr = massRate * 3600;
+        const specific = outKgHr / (Math.PI * Ddie);
+        const shearApp = (6 * Q) / (Math.PI * Ddie_m * hdie_m * hdie_m);
+
+        chMeasured(chans.Vdie, `${fmt(Vdie_ms * 60)} m/min`);
+        chMeasured(chans.ddr, `${fmt(DDR)} : 1`);
+        chMeasured(chans.out, `${fmt(outKgHr)} kg/hr`);
+        chMeasured(chans.spec, `${fmt(specific)} kg/hr/mm`);
+        chMeasured(chans.shearApp, `${fmt(shearApp)} 1/s`);
+
+        if (n > 0 && n !== 1) {
+          const shearTrue = shearApp * (2 * n + 1) / (3 * n);
+          chMeasured(chans.shearTrue, `${fmt(shearTrue)} 1/s`);
+        } else {
+          chPending(chans.shearTrue);
+        }
+
+        statusEl.className = "status-msg";
+        statusEl.textContent = `BUR = ${fmt(BUR)} · DDR = ${fmt(DDR)} · ${fmt(outKgHr)} kg/hr`;
+        drawBubble({ BUR, Dbubble_mm, Ddie });
+      }
+
+      function drawBubble(vals) {
+        const W = 220, H = 260;
+        if (!vals) {
+          vizEl.innerHTML = `<svg class="bf-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="No geometry set yet">
+            <rect x="${W / 2 - 10}" y="${H - 40}" width="20" height="30" class="bf-die"/>
+          </svg>`;
+          return;
+        }
+        const dieW = Math.min(50, Math.max(14, vals.Ddie * 0.15));
+        const bubbleW = Math.min(160, dieW * vals.BUR);
+        const cx = W / 2, dieY = H - 34, bubbleTopY = 40, waistY = dieY - 70;
+        const path = `M${cx - dieW / 2} ${dieY} L${cx - dieW / 2} ${dieY - 20}
+          C ${cx - bubbleW / 2} ${waistY + 40} ${cx - bubbleW / 2} ${waistY} ${cx - bubbleW / 2} ${bubbleTopY + 30}
+          L${cx - dieW * 0.3} ${bubbleTopY}
+          L${cx + dieW * 0.3} ${bubbleTopY}
+          L${cx + bubbleW / 2} ${bubbleTopY + 30}
+          C ${cx + bubbleW / 2} ${waistY} ${cx + bubbleW / 2} ${waistY + 40} ${cx + dieW / 2} ${dieY - 20}
+          L${cx + dieW / 2} ${dieY} Z`;
+        vizEl.innerHTML = `<svg class="bf-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bubble at blow-up ratio ${fmt(vals.BUR)}">
+          <path class="bf-bubble-fill" d="${path}"/>
+          <path class="bf-bubble-outline" d="${path}"/>
+          <rect x="${cx - dieW / 2 - 6}" y="${dieY}" width="${dieW + 12}" height="14" class="bf-die"/>
+          <line class="bf-nip" x1="${cx - dieW * 0.3 - 10}" y1="${bubbleTopY - 4}" x2="${cx + dieW * 0.3 + 10}" y2="${bubbleTopY - 4}"/>
+          <path class="bf-flow" d="M${cx} ${dieY} L${cx} ${bubbleTopY}"/>
+          <text class="bf-lbl" x="${cx}" y="${dieY + 30}" text-anchor="middle">DIE · ${fmt(vals.Ddie)} mm</text>
+          <text class="bf-lbl bf-lbl-hi" x="${cx}" y="${waistY - 6}" text-anchor="middle">BUBBLE · ${fmt(vals.Dbubble_mm)} mm</text>
+          <text class="bf-lbl" x="${cx}" y="${bubbleTopY - 12}" text-anchor="middle">NIP ROLLS</text>
+        </svg>`;
+      }
+
+      panel.querySelector(".btn-reset").addEventListener("click", () => {
+        Object.assign(raw, { Ddie: "", hdie: "", Wlay: "", tfilm: "", Vline: "", rho: "", n: "" });
+        resinSel.value = "4";
+        inDefs.forEach(d => chEmpty(chans[d.key]));
+        recompute(); chans.Ddie.input.focus();
+      });
+
+      recompute();
+    },
+  };
+
+  /* ============================================================
+     TOOL 21 — BUBBLE STRESS
+     ============================================================ */
+  const BubbleStress = {
+    id: "bubblestress",
+    discipline: "PLASTICS PROCESSING",
+    title: "Bubble stress calculator",
+    subtitle: "Enter the internal bubble pressure, layflat width, and gauge to get hoop stress in the film — add a haul-off tension for machine-direction stress and the biaxial balance.",
+
+    mount(root) {
+      const raw = { dP: "4", Wlay: "600", tfilm: "50", F: "" };
+      const chans = {};
+
+      root.innerHTML = "";
+      const panel = el("div", "panel");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>BUBBLE WALL</h2>
+          <div class="legend"><span><i class="dot set"></i> SET</span><span><i class="dot meas"></i> MEASURED</span></div>
+        </div>
+        <div class="pt-layout">
+          <div class="pt-stage"><div class="bs-viz"></div></div>
+          <div class="channels cols-2 bs-inputs"></div>
+        </div>
+        <div class="outputs-wrap"><div class="channels cols-3 bs-outputs"></div></div>
+        <div class="status"><div class="status-msg"></div><button class="btn-reset">CLEAR</button></div>`;
+      root.appendChild(panel);
+      root.appendChild(el("p", "note", `<span class="k">i</span><span>Hoop stress uses the thin-wall pressure vessel relation σ = ΔP·R/t. Machine-direction stress needs an actual haul-off tension — geometry alone can't give you that, so it only appears once you enter one.</span>`));
+
+      const vizEl = panel.querySelector(".bs-viz");
+      const inputsEl = panel.querySelector(".bs-inputs");
+      const outsEl = panel.querySelector(".bs-outputs");
+      const statusEl = panel.querySelector(".status-msg");
+
+      const inDefs = [
+        { key: "dP", sym: "ΔP", name: "Bubble pressure", unit: "inH₂O" },
+        { key: "Wlay", sym: "W", name: "Layflat width", unit: "mm" },
+        { key: "tfilm", sym: "t", name: "Film gauge", unit: "µm" },
+        { key: "F", sym: "F", name: "Haul-off tension", unit: "N" },
+      ];
+      inDefs.forEach(d => {
+        const c = makeChannel(d); chans[d.key] = c; inputsEl.appendChild(c.el);
+        if (raw[d.key]) chInput(c, raw[d.key]); else chEmpty(c);
+        c.input.addEventListener("input", e => { raw[d.key] = e.target.value; recompute(); });
+      });
+
+      const outDefs = [
+        { key: "Dbubble", sym: "D", name: "Bubble diameter", unit: "mm" },
+        { key: "hoop", sym: "σₕ", name: "Hoop stress", unit: "Pa" },
+        { key: "md", sym: "σₘ", name: "MD stress", unit: "Pa" },
+        { key: "ratio", sym: "σₕ/σₘ", name: "Biaxial ratio", unit: "ratio" },
+      ];
+      outDefs.forEach(d => { const c = makeChannel(d); chans[d.key] = c; outsEl.appendChild(c.el); chPending(c); });
+
+      const num = k => { const v = parseFloat(raw[k]); return Number.isNaN(v) ? undefined : v; };
+
+      function recompute() {
+        const dP_inH2O = num("dP"), Wlay = num("Wlay"), tfilm = num("tfilm"), F = num("F");
+        const need = [];
+        if (!(dP_inH2O > 0)) need.push("bubble pressure");
+        if (!(Wlay > 0)) need.push("layflat width");
+        if (!(tfilm > 0)) need.push("film gauge");
+
+        if (need.length) {
+          outDefs.forEach(d => chPending(chans[d.key]));
+          statusEl.className = "status-msg";
+          statusEl.textContent = "Add the " + need.join(", ") + " to solve.";
+          drawBubble(null);
+          return;
+        }
+
+        const dP = dP_inH2O * 249.089;
+        const Dbubble_mm = 2 * Wlay / Math.PI;
+        const R_m = (Dbubble_mm * 1e-3) / 2;
+        const t_m = tfilm * 1e-6;
+        const hoop = dP * R_m / t_m;
+
+        chMeasured(chans.Dbubble, `${fmt(Dbubble_mm)} mm`);
+        chMeasured(chans.hoop, formatSI(hoop, "Pa"));
+
+        if (F > 0) {
+          const md = F / (Math.PI * (Dbubble_mm * 1e-3) * t_m);
+          chMeasured(chans.md, formatSI(md, "Pa"));
+          chMeasured(chans.ratio, fmt(hoop / md));
+          statusEl.className = "status-msg";
+          statusEl.textContent = `σₕ = ${formatSI(hoop, "Pa")} · σₘ = ${formatSI(md, "Pa")}`;
+        } else {
+          chPending(chans.md); chPending(chans.ratio);
+          statusEl.className = "status-msg";
+          statusEl.textContent = `σₕ = ${formatSI(hoop, "Pa")}. Add a haul-off tension for MD stress.`;
+        }
+
+        drawBubble({ dP: dP_inH2O, hasF: F > 0 });
+      }
+
+      function drawBubble(vals) {
+        const W = 260, H = 200, cx = W / 2, cy = H / 2, r = 70;
+        if (!vals) {
+          vizEl.innerHTML = `<svg class="bs-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="No pressure set yet">
+            <circle cx="${cx}" cy="${cy}" r="${r}" class="bs-wall" stroke-dasharray="4 6" opacity="0.4"/>
+          </svg>`;
+          return;
+        }
+        let arrows = "";
+        for (let i = 0; i < 8; i++) {
+          const ang = i * Math.PI / 4;
+          const x1 = cx + Math.cos(ang) * (r - 18), y1 = cy + Math.sin(ang) * (r - 18);
+          const x2 = cx + Math.cos(ang) * (r + 2), y2 = cy + Math.sin(ang) * (r + 2);
+          arrows += `<line class="bs-arrow" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+        }
+        const mdArrows = vals.hasF ? `
+          <line class="bs-arrow" x1="${cx}" y1="${cy - r - 4}" x2="${cx}" y2="${cy - r - 24}"/>
+          <path class="bs-arrow-head" d="M${cx - 5} ${cy - r - 20} L${cx + 5} ${cy - r - 20} L${cx} ${cy - r - 28} Z"/>
+          <line class="bs-arrow" x1="${cx}" y1="${cy + r + 4}" x2="${cx}" y2="${cy + r + 24}"/>
+          <path class="bs-arrow-head" d="M${cx - 5} ${cy + r + 20} L${cx + 5} ${cy + r + 20} L${cx} ${cy + r + 28} Z"/>` : "";
+        vizEl.innerHTML = `<svg class="bs-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bubble wall under internal pressure${vals.hasF ? " and haul-off tension" : ""}">
+          <circle cx="${cx}" cy="${cy}" r="${r}" class="bs-wall"/>
+          ${arrows}${mdArrows}
+          <text class="bs-lbl" x="${cx}" y="${cy + 4}" text-anchor="middle" fill="var(--muted)">ΔP · ${fmt(vals.dP)} inH₂O</text>
+        </svg>`;
+      }
+
+      panel.querySelector(".btn-reset").addEventListener("click", () => {
+        Object.assign(raw, { dP: "", Wlay: "", tfilm: "", F: "" });
+        inDefs.forEach(d => chEmpty(chans[d.key]));
+        recompute(); chans.dP.input.focus();
+      });
+
+      recompute();
+    },
+  };
+
+  /* ============================================================
      ROUTER + SIDEBAR
      ============================================================ */
-  const MODULES = { ohms: OhmsLaw, gear: GearRatio, beam: BeamDeflection, chain: ChainPitch, vdiv: VoltageDivider, rcode: ResistorCodes, reynolds: ReynoldsNumber, vdrop: VoltageDrop, filter: RCFilter, timer555: Timer555, opamp: OpAmpGain, units: UnitConverter, dimensional: DimensionalAnalysis, mtorque: MotorTorque, mfla: MotorFLA, vfdcable: VFDCable, acpower: ACPowerTriangle, acimpedance: ACImpedance, pfc: PowerFactorCorrection };
+  const MODULES = { ohms: OhmsLaw, gear: GearRatio, beam: BeamDeflection, chain: ChainPitch, vdiv: VoltageDivider, rcode: ResistorCodes, reynolds: ReynoldsNumber, vdrop: VoltageDrop, filter: RCFilter, timer555: Timer555, opamp: OpAmpGain, units: UnitConverter, dimensional: DimensionalAnalysis, mtorque: MotorTorque, mfla: MotorFLA, vfdcable: VFDCable, acpower: ACPowerTriangle, acimpedance: ACImpedance, pfc: PowerFactorCorrection, blownfilm: BlownFilmProcess, bubblestress: BubbleStress };
   const DISCIPLINES = [
     { name: "ELECTRICAL", tools: [
       { id: "ohms", name: "Ohm's Law", status: "active" },
@@ -4022,6 +4346,10 @@
       { id: "mtorque", name: "Motor Torque & Speed", status: "active" },
       { id: "mfla", name: "Motor FLA & Inrush", status: "active" },
       { id: "vfdcable", name: "VFD Cable Sizing", status: "active" },
+    ]},
+    { name: "PLASTICS PROCESSING", tools: [
+      { id: "blownfilm", name: "Blown Film Process", status: "active" },
+      { id: "bubblestress", name: "Bubble Stress", status: "active" },
     ]},
   ];
 
