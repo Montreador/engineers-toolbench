@@ -42,7 +42,8 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  .app { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
+  .app { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; transition: grid-template-columns .2s ease; }
+  .app.sidebar-collapsed { grid-template-columns: 0px 1fr; }
 
   /* ---------------- SIDEBAR ---------------- */
   .sidebar {
@@ -50,7 +51,20 @@
     background: linear-gradient(180deg, #171b21, #14171c);
     padding: 22px 16px;
     display: flex; flex-direction: column; gap: 26px;
+    overflow: hidden; white-space: nowrap;
+    transition: padding .2s ease, opacity .15s ease;
   }
+  .app.sidebar-collapsed .sidebar { padding-left: 0; padding-right: 0; opacity: 0; }
+  .sidebar-toggle {
+    position: fixed; top: 18px; left: 258px; z-index: 20;
+    width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+    background: var(--panel); border: 1px solid var(--line-hi); border-radius: 6px;
+    color: var(--muted); cursor: pointer; transition: left .2s ease, color .15s, border-color .15s;
+  }
+  .sidebar-toggle:hover { color: var(--text); border-color: #4a5262; }
+  .sidebar-toggle .icon { display: inline-block; transition: transform .2s ease; font-size: 12px; line-height: 1; }
+  .app.sidebar-collapsed .sidebar-toggle { left: 10px; }
+  .app.sidebar-collapsed .sidebar-toggle .icon { transform: rotate(180deg); }
   .brand { display: flex; align-items: center; gap: 11px; padding: 0 6px; }
   .brand-mark {
     width: 30px; height: 30px; border-radius: 7px;
@@ -58,12 +72,27 @@
     display: grid; place-items: center;
     color: #14171C; font-family: var(--mono); font-weight: 600; font-size: 15px;
     box-shadow: 0 0 0 1px #00000040, 0 6px 14px -6px var(--amber);
+    flex-shrink: 0;
   }
   .brand-name { font-weight: 700; letter-spacing: -0.01em; font-size: 16px; }
   .brand-sub  { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.14em; }
 
   .nav-group { display: flex; flex-direction: column; gap: 3px; }
-  .nav-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; color: var(--muted); padding: 4px 8px; margin-bottom: 2px; }
+  .nav-label {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; color: var(--muted);
+    padding: 4px 8px; margin-bottom: 2px;
+    background: none; border: none; cursor: pointer; text-align: left;
+    transition: color .15s;
+  }
+  .nav-label:hover { color: #C4CAD4; }
+  .nav-chevron { flex-shrink: 0; transition: transform .2s ease; font-size: 9px; }
+  .nav-group.expanded .nav-chevron { transform: rotate(90deg); }
+  .nav-group-items {
+    display: flex; flex-direction: column; gap: 3px;
+    max-height: 0; overflow: hidden; transition: max-height .25s ease;
+  }
+  .nav-group.expanded .nav-group-items { max-height: 800px; }
   .nav-item {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     padding: 8px 10px; border-radius: 8px; font-size: 13.5px; color: #C4CAD4;
@@ -414,6 +443,9 @@
     .sidebar { flex-direction: row; align-items: center; gap: 14px; overflow-x: auto; padding: 14px 16px; border-right: none; border-bottom: 1px solid var(--line); }
     .sidebar .nav-group { flex-direction: row; gap: 6px; }
     .sidebar .nav-label { display: none; }
+    .sidebar .nav-group-items { max-height: none; overflow: visible; flex-direction: row; gap: 6px; }
+    .sidebar-toggle { display: none; }
+    .app.sidebar-collapsed { grid-template-columns: 1fr; }
     .brand-sub { display: none; }
     .main { padding: 24px 18px 40px; }
     .channels.cols-4 { grid-template-columns: repeat(2, 1fr); }
@@ -451,7 +483,8 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app">
+  <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar"><span class="icon">‹</span></button>
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark">Ω</div>
@@ -4356,27 +4389,54 @@
   const navEl = document.getElementById("nav");
   const viewEl = document.getElementById("view");
   const navButtons = {};
+  const navGroups = {};
+  const toolDiscipline = {};
 
   DISCIPLINES.forEach(group => {
     const g = el("nav", "nav-group");
-    g.appendChild(el("div", "nav-label", group.name));
+    navGroups[group.name] = g;
+    const label = el("button", "nav-label", `<span>${group.name}</span><span class="nav-chevron">›</span>`);
+    label.type = "button";
+    label.setAttribute("aria-expanded", "false");
+    label.addEventListener("click", () => setExpandedGroup(group.name));
+    g.appendChild(label);
+    const items = el("div", "nav-group-items");
     group.tools.forEach(t => {
+      toolDiscipline[t.id] = group.name;
       if (t.status === "soon") {
-        g.appendChild(el("button", "nav-item soon", `${t.name} <span class="tag">SOON</span>`));
+        items.appendChild(el("button", "nav-item soon", `${t.name} <span class="tag">SOON</span>`));
       } else {
         const b = el("button", "nav-item", t.name);
         b.addEventListener("click", () => route(t.id));
         navButtons[t.id] = b;
-        g.appendChild(b);
+        items.appendChild(b);
       }
     });
+    g.appendChild(items);
     navEl.appendChild(g);
+  });
+
+  function setExpandedGroup(name) {
+    Object.entries(navGroups).forEach(([gname, g]) => {
+      const isOpen = gname === name;
+      g.classList.toggle("expanded", isOpen);
+      g.querySelector(".nav-label").setAttribute("aria-expanded", String(isOpen));
+    });
+  }
+
+  const appEl = document.getElementById("app");
+  const sidebarToggle = document.getElementById("sidebarToggle");
+  sidebarToggle.addEventListener("click", () => {
+    const collapsed = appEl.classList.toggle("sidebar-collapsed");
+    sidebarToggle.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+    sidebarToggle.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
   });
 
   function route(id) {
     const mod = MODULES[id]; if (!mod) return;
     Object.values(navButtons).forEach(b => b.classList.remove("active"));
     navButtons[id].classList.add("active");
+    setExpandedGroup(toolDiscipline[id]);
     viewEl.innerHTML = `
       <div class="crumb">${mod.discipline} / <b>${mod.title.replace(/ calculator$/i, "").toUpperCase()}</b></div>
       <h1 class="title">${mod.title}</h1>
