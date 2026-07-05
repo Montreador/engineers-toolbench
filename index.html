@@ -4,6 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Toolbench — Engineer's Toolkit</title>
+<meta name="theme-color" content="#14171C" />
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+<link rel="apple-touch-icon" href="assets/logo-192.png" />
+<link rel="manifest" href="manifest.json" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -68,9 +73,7 @@
   .brand { display: flex; align-items: center; gap: 11px; padding: 0 6px; }
   .brand-mark {
     width: 30px; height: 30px; border-radius: 7px;
-    background: linear-gradient(135deg, var(--amber), #c77f10);
-    display: grid; place-items: center;
-    color: #14171C; font-family: var(--mono); font-weight: 600; font-size: 15px;
+    display: block; object-fit: cover;
     box-shadow: 0 0 0 1px #00000040, 0 6px 14px -6px var(--amber);
     flex-shrink: 0;
   }
@@ -507,7 +510,7 @@
 <div class="app" id="app">
   <div class="mobile-topbar">
     <div class="brand">
-      <div class="brand-mark">Ω</div>
+      <img class="brand-mark" src="assets/logo.svg" alt="Toolbench logo" width="30" height="30" />
       <div class="brand-name">Toolbench</div>
     </div>
     <button class="mobile-nav-toggle" id="mobileNavToggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
@@ -516,7 +519,7 @@
   <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar"><span class="icon">‹</span></button>
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">Ω</div>
+      <img class="brand-mark" src="assets/logo.svg" alt="Toolbench logo" width="30" height="30" />
       <div>
         <div class="brand-name">Toolbench</div>
         <div class="brand-sub">ENGINEER'S TOOLKIT</div>
