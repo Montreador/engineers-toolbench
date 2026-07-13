@@ -6,7 +6,7 @@ Live at [machinetinker.com](https://machinetinker.com).
 
 ## Disciplines & tools
 
-- **Electrical** — Ohm's Law, Voltage Divider, Resistor Codes, Voltage Drop, AC Power Triangle, AC Impedance, Power Factor Correction
+- **Electrical** — Ohm's Law, Voltage Divider, Resistor Codes, Voltage Drop, AC Power Triangle, AC Impedance, Power Factor Correction, DOL/Forward-Reverse/Star-Delta Starter Wiring References, Series/Parallel RLC
 - **Mechanical** — Gear Ratio, Beam Deflection, Chain Pitch
 - **Fluids & Thermal** — Reynolds Number
 - **Controls** — RC/RL Filter, 555 Timer, Op-Amp Gain

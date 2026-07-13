@@ -438,6 +438,35 @@
   .bs-arrow-head { fill: var(--amber); }
   .bs-lbl { font-family: var(--mono); font-size: 11px; }
 
+  /* ---------------- DOL STARTER REFERENCE ---------------- */
+  .dol-section { padding: 22px 20px; border-bottom: 1px solid var(--line); background: var(--well); }
+  .dol-section:last-of-type { border-bottom: none; }
+  .dol-section-head { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--muted); margin-bottom: 16px; }
+  .dol-svg { display: block; }
+  .dol-power-wrap { display: flex; justify-content: center; }
+  .dol-power-svg { width: 100%; max-width: 240px; height: auto; }
+  .dol-control-svg { width: 100%; height: auto; }
+  .dol-lead { stroke: #aeb6c2; stroke-width: 1.6; fill: none; }
+  .dol-rail { stroke: #aeb6c2; stroke-width: 2; fill: none; }
+  .dol-term { fill: #aeb6c2; }
+  .dol-node { fill: var(--cyan); }
+  .dol-blade { stroke: var(--amber); stroke-width: 2; stroke-linecap: round; }
+  .dol-link { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .dol-fuse { fill: none; stroke: var(--amber); stroke-width: 1.6; }
+  .dol-overload { fill: none; stroke: var(--amber); stroke-width: 1.6; }
+  .dol-overload-heater { fill: none; stroke: var(--amber); stroke-width: 1.3; }
+  .dol-coil { fill: none; stroke: var(--amber); stroke-width: 1.8; }
+  .dol-motor { fill: #20252e; stroke: var(--amber); stroke-width: 2; }
+  .dol-motor-lbl { font-family: var(--mono); font-size: 20px; font-weight: 600; fill: var(--text); }
+  .dol-motor-sub { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+  .dol-lbl { font-family: var(--mono); font-size: 12px; fill: var(--text); }
+  .dol-lbl-sub { font-family: var(--mono); font-size: 9px; fill: var(--muted); }
+  .dol-lbl-side { font-family: var(--mono); font-size: 12px; fill: var(--cyan); }
+  .dol-coil-lbl { font-family: var(--mono); font-size: 11px; fill: var(--text); }
+  .dol-legend { display: flex; gap: 22px; padding: 12px 20px; border-top: 1px solid var(--line); background: #181c22; font-family: var(--mono); font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+  .dol-legend b { color: var(--amber); font-weight: 500; }
+  .dol-tbox { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+
   :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
 
   /* ---------------- RESPONSIVE ---------------- */
@@ -4377,9 +4406,698 @@
   };
 
   /* ============================================================
+     TOOL 22 — DOL STARTER WIRING REFERENCE
+     ============================================================ */
+  const DOLStarter = {
+    id: "dolstarter",
+    discipline: "ELECTRICAL",
+    title: "DOL starter wiring reference",
+    subtitle: "Power and control circuit diagrams for a direct-on-line 3-phase motor starter, drawn to IEC 60617 symbol conventions with standard EN 60947 terminal numbering.",
+
+    mount(root) {
+      function vcontact(x, cy, type) {
+        const h = 8;
+        let s = `<circle class="dol-term" cx="${x}" cy="${cy - h}" r="1.6"/><circle class="dol-term" cx="${x}" cy="${cy + h}" r="1.6"/>`;
+        s += type === "no"
+          ? `<line class="dol-blade" x1="${x - 5}" y1="${cy - 3}" x2="${x + 5}" y2="${cy + 3}"/>`
+          : `<line class="dol-blade" x1="${x - 4}" y1="${cy - h}" x2="${x + 4}" y2="${cy + h}"/>`;
+        return s;
+      }
+      function hcontact(x, cy, type) {
+        const h = 8;
+        let s = `<circle class="dol-term" cx="${x - h}" cy="${cy}" r="1.6"/><circle class="dol-term" cx="${x + h}" cy="${cy}" r="1.6"/>`;
+        s += type === "no"
+          ? `<line class="dol-blade" x1="${x - 3}" y1="${cy + 5}" x2="${x + 3}" y2="${cy - 5}"/>`
+          : `<line class="dol-blade" x1="${x - h}" y1="${cy + 4}" x2="${x + h}" y2="${cy - 4}"/>`;
+        return s;
+      }
+
+      function drawPowerCircuit() {
+        const xs = [65, 115, 165];
+        let s = "";
+        xs.forEach((x, i) => {
+          s += `<text class="dol-lbl" x="${x}" y="12" text-anchor="middle">L${i + 1}</text>`;
+          s += `<line class="dol-lead" x1="${x}" y1="18" x2="${x}" y2="55"/>`;
+          s += `<rect class="dol-fuse" x="${x - 5}" y="55" width="10" height="20"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="75" x2="${x}" y2="97"/>`;
+          s += vcontact(x, 105, "no");
+          s += `<line class="dol-lead" x1="${x}" y1="113" x2="${x}" y2="153"/>`;
+          s += `<rect class="dol-overload" x="${x - 6}" y="153" width="12" height="22"/>`;
+          s += `<path class="dol-overload-heater" d="M${x - 3} 158 L${x + 3} 162 L${x - 3} 166 L${x + 3} 170"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="175" x2="${x}" y2="217"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="217" x2="115" y2="243"/>`;
+        });
+        s += `<line class="dol-link" x1="65" y1="105" x2="165" y2="105"/>`;
+        s += `<text class="dol-lbl-side" x="195" y="109">KM1</text>`;
+        s += `<line class="dol-link" x1="65" y1="164" x2="165" y2="164"/>`;
+        s += `<text class="dol-lbl-side" x="195" y="168">F2</text>`;
+        s += `<text class="dol-lbl-side" x="195" y="68">F1</text>`;
+        s += `<circle class="dol-motor" cx="115" cy="277" r="32"/>`;
+        s += `<text class="dol-motor-lbl" x="115" y="273" text-anchor="middle">M</text>`;
+        s += `<text class="dol-motor-sub" x="115" y="290" text-anchor="middle">3~</text>`;
+        s += `<text class="dol-lbl" x="115" y="330" text-anchor="middle">M1</text>`;
+        return `<svg class="dol-svg dol-power-svg" viewBox="0 0 260 340" role="img" aria-label="DOL starter power circuit: three-phase supply through fuses, contactor KM1, overload relay F2, to motor M1">${s}</svg>`;
+      }
+
+      function drawControlCircuit() {
+        const x = 100;
+        let s = "";
+        s += `<line class="dol-rail" x1="55" y1="15" x2="195" y2="15"/>`;
+        s += `<line class="dol-rail" x1="55" y1="235" x2="195" y2="235"/>`;
+        s += `<text class="dol-lbl" x="45" y="19" text-anchor="end">L</text>`;
+        s += `<text class="dol-lbl" x="45" y="239" text-anchor="end">N</text>`;
+
+        s += `<line class="dol-lead" x1="${x}" y1="15" x2="${x}" y2="42"/>`;
+        s += vcontact(x, 50, "nc");
+        s += `<text class="dol-lbl" x="${x + 15}" y="47" text-anchor="start">S0</text>`;
+        s += `<text class="dol-lbl-sub" x="${x + 15}" y="58" text-anchor="start">(Stop)</text>`;
+
+        s += `<line class="dol-lead" x1="${x}" y1="58" x2="${x}" y2="75"/>`;
+        s += `<circle class="dol-node" cx="${x}" cy="75" r="2.2"/>`;
+
+        s += `<line class="dol-lead" x1="${x}" y1="75" x2="${x}" y2="92"/>`;
+        s += vcontact(x, 100, "no");
+        s += `<text class="dol-lbl" x="${x + 15}" y="97" text-anchor="start">S1</text>`;
+        s += `<text class="dol-lbl-sub" x="${x + 15}" y="108" text-anchor="start">(Start)</text>`;
+
+        s += `<line class="dol-lead" x1="${x}" y1="108" x2="${x}" y2="125"/>`;
+        s += `<circle class="dol-node" cx="${x}" cy="125" r="2.2"/>`;
+
+        // seal-in loop bulges right around S1, clear of the S1 label
+        s += `<line class="dol-lead" x1="${x}" y1="75" x2="168" y2="75"/>`;
+        s += `<line class="dol-lead" x1="168" y1="75" x2="168" y2="92"/>`;
+        s += vcontact(168, 100, "no");
+        s += `<line class="dol-lead" x1="168" y1="108" x2="168" y2="125"/>`;
+        s += `<line class="dol-lead" x1="168" y1="125" x2="${x}" y2="125"/>`;
+        s += `<text class="dol-lbl-sub" x="183" y="97" text-anchor="start">KM1</text>`;
+        s += `<text class="dol-lbl-sub" x="183" y="108" text-anchor="start">(13-14)</text>`;
+
+        s += `<line class="dol-lead" x1="${x}" y1="125" x2="${x}" y2="152"/>`;
+        s += vcontact(x, 160, "nc");
+        s += `<text class="dol-lbl" x="${x + 15}" y="157" text-anchor="start">F2</text>`;
+        s += `<text class="dol-lbl-sub" x="${x + 15}" y="168" text-anchor="start">(95-96)</text>`;
+
+        s += `<line class="dol-lead" x1="${x}" y1="168" x2="${x}" y2="185"/>`;
+        s += `<rect class="dol-coil" x="${x - 18}" y="185" width="36" height="20"/>`;
+        s += `<text class="dol-coil-lbl" x="${x + 24}" y="192" text-anchor="start">KM1</text>`;
+        s += `<text class="dol-lbl-sub" x="${x + 24}" y="203" text-anchor="start">(A1-A2)</text>`;
+
+        s += `<line class="dol-lead" x1="${x}" y1="205" x2="${x}" y2="235"/>`;
+
+        return `<svg class="dol-svg dol-control-svg" viewBox="0 0 250 250" role="img" aria-label="DOL starter control circuit, drawn top to bottom: stop button, start button with seal-in auxiliary contact bulging to the side, overload trip contact, and contactor coil">${s}</svg>`;
+      }
+
+      root.innerHTML = "";
+      const panel = el("div", "panel");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>DOL STARTER</h2>
+        </div>
+        <div class="dol-section">
+          <div class="dol-section-head">POWER CIRCUIT</div>
+          <div class="dol-power-wrap">${drawPowerCircuit()}</div>
+        </div>
+        <div class="dol-section">
+          <div class="dol-section-head">CONTROL CIRCUIT</div>
+          ${drawControlCircuit()}
+        </div>
+        <div class="dol-legend">
+          <span><b>NO</b> — normally open, closes when actuated</span>
+          <span><b>NC</b> — normally closed, opens when actuated</span>
+        </div>`;
+      root.appendChild(panel);
+      root.appendChild(el("p", "note", `<span class="k">i</span><span>Symbols follow IEC 60617 conventions in simplified form; contactor and relay terminal numbers (13-14, 95-96, A1-A2) follow common EN 60947 designations. Control voltage (L/N) may come from a control transformer or a direct tap, depending on the installation. This is a teaching/reference diagram — always verify against the specific device's datasheet and local code before wiring.</span>`));
+    },
+  };
+
+  /* ============================================================
+     TOOL 23 — FORWARD/REVERSE STARTER WIRING REFERENCE
+     ============================================================ */
+  const FwdRevStarter = {
+    id: "fwdrev",
+    discipline: "ELECTRICAL",
+    title: "Forward/reverse starter wiring reference",
+    subtitle: "Power and control circuit diagrams for a reversing 3-phase motor starter — two phases crossed for KMR to reverse rotation, with mechanical and electrical interlocking between KMF and KMR.",
+
+    mount(root) {
+      function vcontact(x, cy, type) {
+        const h = 8;
+        let s = `<circle class="dol-term" cx="${x}" cy="${cy - h}" r="1.6"/><circle class="dol-term" cx="${x}" cy="${cy + h}" r="1.6"/>`;
+        s += type === "no"
+          ? `<line class="dol-blade" x1="${x - 5}" y1="${cy - 3}" x2="${x + 5}" y2="${cy + 3}"/>`
+          : `<line class="dol-blade" x1="${x - 4}" y1="${cy - h}" x2="${x + 4}" y2="${cy + h}"/>`;
+        return s;
+      }
+      function hcontact(x, cy, type) {
+        const h = 8;
+        let s = `<circle class="dol-term" cx="${x - h}" cy="${cy}" r="1.6"/><circle class="dol-term" cx="${x + h}" cy="${cy}" r="1.6"/>`;
+        s += type === "no"
+          ? `<line class="dol-blade" x1="${x - 3}" y1="${cy + 5}" x2="${x + 3}" y2="${cy - 5}"/>`
+          : `<line class="dol-blade" x1="${x - h}" y1="${cy + 4}" x2="${x + h}" y2="${cy - 4}"/>`;
+        return s;
+      }
+
+      function drawPowerCircuit() {
+        const sup = [90, 120, 150];
+        const kmf = [90, 120, 150];
+        const kmr = [210, 240, 270];
+        const merge = [90, 120, 150];
+        let s = "";
+        sup.forEach((x, i) => {
+          s += `<text class="dol-lbl" x="${x}" y="12" text-anchor="middle">L${i + 1}</text>`;
+          s += `<line class="dol-lead" x1="${x}" y1="18" x2="${x}" y2="45"/>`;
+          s += `<rect class="dol-fuse" x="${x - 5}" y="45" width="10" height="18"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="63" x2="${x}" y2="75"/>`;
+          s += `<circle class="dol-node" cx="${x}" cy="75" r="2"/>`;
+        });
+        s += `<text class="dol-lbl-side" x="188" y="42">F1</text>`;
+        // straight taps to KMF
+        kmf.forEach((x, i) => { s += `<line class="dol-lead" x1="${sup[i]}" y1="75" x2="${x}" y2="115"/>`; });
+        // nested right-angle wraps to KMR — no diagonals, each phase routed around at its own height so the paths don't cross visually.
+        // Outermost (L1 -> KMR's far pole) sits highest; innermost (L3 -> KMR's near pole) sits lowest, closest to the contacts.
+        const wrapH = [82, 92, 102];
+        const krTarget = [kmr[2], kmr[1], kmr[0]]; // L1->kmr3, L2->kmr2, L3->kmr1
+        sup.forEach((x, i) => {
+          const h = wrapH[i], tx = krTarget[i];
+          s += `<line class="dol-lead" x1="${x}" y1="75" x2="${x}" y2="${h}"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="${h}" x2="${tx}" y2="${h}"/>`;
+          s += `<line class="dol-lead" x1="${tx}" y1="${h}" x2="${tx}" y2="115"/>`;
+        });
+        // KMF contacts
+        kmf.forEach(x => { s += vcontact(x, 123, "no"); });
+        s += `<line class="dol-link" x1="${kmf[0]}" y1="123" x2="${kmf[2]}" y2="123"/>`;
+        s += `<text class="dol-lbl-side" x="35" y="127" text-anchor="end">KMF</text>`;
+        // KMR contacts
+        kmr.forEach(x => { s += vcontact(x, 123, "no"); });
+        s += `<line class="dol-link" x1="${kmr[0]}" y1="123" x2="${kmr[2]}" y2="123"/>`;
+        s += `<text class="dol-lbl-side" x="288" y="127">KMR</text>`;
+        // KMF outputs straight down to merge (U1,V1,W1 in normal order)
+        kmf.forEach((x, i) => { s += `<line class="dol-lead" x1="${x}" y1="131" x2="${merge[i]}" y2="165"/>`; });
+        // KMR outputs: nested wraps back to the same merge points — no further crossing needed, the swap already happened above
+        const outH = [141, 149, 157];
+        kmr.forEach((x, i) => {
+          const h = outH[i];
+          s += `<line class="dol-lead" x1="${x}" y1="131" x2="${x}" y2="${h}"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="${h}" x2="${merge[i]}" y2="${h}"/>`;
+          s += `<line class="dol-lead" x1="${merge[i]}" y1="${h}" x2="${merge[i]}" y2="165"/>`;
+        });
+        merge.forEach(x => { s += `<circle class="dol-node" cx="${x}" cy="165" r="2"/>`; });
+        // overload
+        merge.forEach(x => {
+          s += `<line class="dol-lead" x1="${x}" y1="165" x2="${x}" y2="183"/>`;
+          s += `<rect class="dol-overload" x="${x - 6}" y="183" width="12" height="22"/>`;
+          s += `<path class="dol-overload-heater" d="M${x - 3} 188 L${x + 3} 192 L${x - 3} 196 L${x + 3} 200"/>`;
+        });
+        s += `<line class="dol-link" x1="${merge[0]}" y1="194" x2="${merge[2]}" y2="194"/>`;
+        s += `<text class="dol-lbl-side" x="188" y="198">F2</text>`;
+        merge.forEach(x => {
+          s += `<line class="dol-lead" x1="${x}" y1="205" x2="${x}" y2="247"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="247" x2="120" y2="273"/>`;
+        });
+        s += `<circle class="dol-motor" cx="120" cy="307" r="32"/>`;
+        s += `<text class="dol-motor-lbl" x="120" y="303" text-anchor="middle">M</text>`;
+        s += `<text class="dol-motor-sub" x="120" y="320" text-anchor="middle">3~</text>`;
+        s += `<text class="dol-lbl" x="120" y="360" text-anchor="middle">M1</text>`;
+        return `<svg class="dol-svg dol-power-svg" viewBox="0 0 320 375" role="img" aria-label="Reversing starter power circuit: supply through fuses, splitting to contactors KMF (straight) and KMR (with L1/L3 crossed via nested right-angle routing), through a shared overload, to motor M1">${s}</svg>`;
+      }
+
+      function drawControlCircuit() {
+        const trunkX = 160, b1 = 60, b2 = 260, loop1 = 100, loop2 = 220;
+        let s = "";
+        s += `<line class="dol-rail" x1="20" y1="15" x2="300" y2="15"/>`;
+        s += `<line class="dol-rail" x1="20" y1="290" x2="300" y2="290"/>`;
+        s += `<text class="dol-lbl" x="10" y="19" text-anchor="end">L</text>`;
+        s += `<text class="dol-lbl" x="10" y="294" text-anchor="end">N</text>`;
+
+        // common trunk: S0, F2, then split into two branches
+        s += `<line class="dol-lead" x1="${trunkX}" y1="15" x2="${trunkX}" y2="42"/>`;
+        s += vcontact(trunkX, 50, "nc");
+        s += `<text class="dol-lbl" x="${trunkX + 15}" y="47" text-anchor="start">S0</text>`;
+        s += `<text class="dol-lbl-sub" x="${trunkX + 15}" y="58" text-anchor="start">(Stop)</text>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="58" x2="${trunkX}" y2="82"/>`;
+        s += vcontact(trunkX, 90, "nc");
+        s += `<text class="dol-lbl" x="${trunkX + 15}" y="87" text-anchor="start">F2</text>`;
+        s += `<text class="dol-lbl-sub" x="${trunkX + 15}" y="98" text-anchor="start">(95-96)</text>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="98" x2="${trunkX}" y2="115"/>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="115" x2="${b2}" y2="115"/>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="115" x2="${b1}" y2="130"/>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="115" x2="${b2}" y2="130"/>`;
+
+        // branch 1: Forward — labels to the left, loop bulges right (toward center, well clear of branch 2's loop)
+        s += `<circle class="dol-node" cx="${b1}" cy="130" r="2"/>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="130" x2="${b1}" y2="142"/>`;
+        s += vcontact(b1, 150, "no");
+        s += `<text class="dol-lbl" x="${b1 - 15}" y="147" text-anchor="end">S1</text>`;
+        s += `<text class="dol-lbl-sub" x="${b1 - 15}" y="158" text-anchor="end">(Fwd)</text>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="158" x2="${b1}" y2="175"/>`;
+        s += `<circle class="dol-node" cx="${b1}" cy="175" r="2"/>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="130" x2="${loop1}" y2="130"/>`;
+        s += `<line class="dol-lead" x1="${loop1}" y1="130" x2="${loop1}" y2="142"/>`;
+        s += vcontact(loop1, 150, "no");
+        s += `<line class="dol-lead" x1="${loop1}" y1="158" x2="${loop1}" y2="175"/>`;
+        s += `<line class="dol-lead" x1="${loop1}" y1="175" x2="${b1}" y2="175"/>`;
+        s += `<text class="dol-lbl-sub" x="${loop1}" y="140" text-anchor="middle">KMF</text>`;
+        s += `<text class="dol-lbl-sub" x="${loop1}" y="187" text-anchor="middle">(13-14)</text>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="175" x2="${b1}" y2="192"/>`;
+        s += vcontact(b1, 200, "nc");
+        s += `<text class="dol-lbl-sub" x="${b1 - 15}" y="197" text-anchor="end">KMR</text>`;
+        s += `<text class="dol-lbl-sub" x="${b1 - 15}" y="208" text-anchor="end">(21-22)</text>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="208" x2="${b1}" y2="225"/>`;
+        s += `<rect class="dol-coil" x="${b1 - 18}" y="225" width="36" height="20"/>`;
+        s += `<text class="dol-coil-lbl" x="${b1 - 24}" y="232" text-anchor="end">KMF</text>`;
+        s += `<text class="dol-lbl-sub" x="${b1 - 24}" y="243" text-anchor="end">(A1-A2)</text>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="245" x2="${b1}" y2="290"/>`;
+
+        // branch 2: Reverse — labels to the right, loop bulges left (toward center, well clear of branch 1's loop)
+        s += `<circle class="dol-node" cx="${b2}" cy="130" r="2"/>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="130" x2="${b2}" y2="142"/>`;
+        s += vcontact(b2, 150, "no");
+        s += `<text class="dol-lbl" x="${b2 + 15}" y="147" text-anchor="start">S2</text>`;
+        s += `<text class="dol-lbl-sub" x="${b2 + 15}" y="158" text-anchor="start">(Rev)</text>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="158" x2="${b2}" y2="175"/>`;
+        s += `<circle class="dol-node" cx="${b2}" cy="175" r="2"/>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="130" x2="${loop2}" y2="130"/>`;
+        s += `<line class="dol-lead" x1="${loop2}" y1="130" x2="${loop2}" y2="142"/>`;
+        s += vcontact(loop2, 150, "no");
+        s += `<line class="dol-lead" x1="${loop2}" y1="158" x2="${loop2}" y2="175"/>`;
+        s += `<line class="dol-lead" x1="${loop2}" y1="175" x2="${b2}" y2="175"/>`;
+        s += `<text class="dol-lbl-sub" x="${loop2}" y="140" text-anchor="middle">KMR</text>`;
+        s += `<text class="dol-lbl-sub" x="${loop2}" y="187" text-anchor="middle">(13-14)</text>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="175" x2="${b2}" y2="192"/>`;
+        s += vcontact(b2, 200, "nc");
+        s += `<text class="dol-lbl-sub" x="${b2 + 15}" y="197" text-anchor="start">KMF</text>`;
+        s += `<text class="dol-lbl-sub" x="${b2 + 15}" y="208" text-anchor="start">(21-22)</text>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="208" x2="${b2}" y2="225"/>`;
+        s += `<rect class="dol-coil" x="${b2 - 18}" y="225" width="36" height="20"/>`;
+        s += `<text class="dol-coil-lbl" x="${b2 + 24}" y="232" text-anchor="start">KMR</text>`;
+        s += `<text class="dol-lbl-sub" x="${b2 + 24}" y="243" text-anchor="start">(A1-A2)</text>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="245" x2="${b2}" y2="290"/>`;
+
+        return `<svg class="dol-svg dol-control-svg" viewBox="0 0 320 300" role="img" aria-label="Reversing starter control circuit, drawn top to bottom: stop and overload trip on a shared trunk, splitting into Forward and Reverse branches each with a seal-in contact and cross-interlocking from the opposite contactor">${s}</svg>`;
+      }
+
+      root.innerHTML = "";
+      const panel = el("div", "panel");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>FORWARD / REVERSE STARTER</h2>
+        </div>
+        <div class="dol-section">
+          <div class="dol-section-head">POWER CIRCUIT</div>
+          <div class="dol-power-wrap">${drawPowerCircuit()}</div>
+        </div>
+        <div class="dol-section">
+          <div class="dol-section-head">CONTROL CIRCUIT</div>
+          ${drawControlCircuit()}
+        </div>
+        <div class="dol-legend">
+          <span><b>NO</b> — normally open, closes when actuated</span>
+          <span><b>NC</b> — normally closed, opens when actuated</span>
+        </div>`;
+      root.appendChild(panel);
+      root.appendChild(el("p", "note", `<span class="k">i</span><span>Reversing swaps any two of the three phases at the motor — L1 and L3 are crossed here, a common convention. KMF and KMR must never close together: this needs both a mechanical interlock (physically prevents both contactors engaging) and the electrical interlock shown (each coil's circuit is broken by an NC auxiliary contact from the other contactor). Symbols and terminal numbers follow the same IEC 60617 / EN 60947 conventions as the DOL reference — verify against datasheets and local code before wiring.</span>`));
+    },
+  };
+
+  /* ============================================================
+     TOOL 24 — STAR-DELTA STARTER WIRING REFERENCE
+     ============================================================ */
+  const StarDeltaStarter = {
+    id: "stardelta",
+    discipline: "ELECTRICAL",
+    title: "Star-delta starter wiring reference",
+    subtitle: "Power and control circuit diagrams for a reduced-voltage star-delta (wye-delta) motor starter — line, star, and delta contactors sequenced by a timer, with mutual interlocking between KMY and KMD.",
+
+    mount(root) {
+      function vcontact(x, cy, type) {
+        const h = 8;
+        let s = `<circle class="dol-term" cx="${x}" cy="${cy - h}" r="1.6"/><circle class="dol-term" cx="${x}" cy="${cy + h}" r="1.6"/>`;
+        s += type === "no"
+          ? `<line class="dol-blade" x1="${x - 5}" y1="${cy - 3}" x2="${x + 5}" y2="${cy + 3}"/>`
+          : `<line class="dol-blade" x1="${x - 4}" y1="${cy - h}" x2="${x + 4}" y2="${cy + h}"/>`;
+        return s;
+      }
+      function hcontact(x, cy, type) {
+        const h = 8;
+        let s = `<circle class="dol-term" cx="${x - h}" cy="${cy}" r="1.6"/><circle class="dol-term" cx="${x + h}" cy="${cy}" r="1.6"/>`;
+        s += type === "no"
+          ? `<line class="dol-blade" x1="${x - 3}" y1="${cy + 5}" x2="${x + 3}" y2="${cy - 5}"/>`
+          : `<line class="dol-blade" x1="${x - h}" y1="${cy + 4}" x2="${x + h}" y2="${cy - 4}"/>`;
+        return s;
+      }
+
+      function drawPowerCircuit() {
+        const xs = [65, 115, 165];
+        let s = "";
+        xs.forEach((x, i) => {
+          s += `<text class="dol-lbl" x="${x}" y="12" text-anchor="middle">L${i + 1}</text>`;
+          s += `<line class="dol-lead" x1="${x}" y1="18" x2="${x}" y2="45"/>`;
+          s += `<rect class="dol-fuse" x="${x - 5}" y="45" width="10" height="18"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="63" x2="${x}" y2="85"/>`;
+          s += vcontact(x, 93, "no");
+          s += `<line class="dol-lead" x1="${x}" y1="101" x2="${x}" y2="123"/>`;
+          s += `<rect class="dol-overload" x="${x - 6}" y="123" width="12" height="20"/>`;
+          s += `<path class="dol-overload-heater" d="M${x - 3} 128 L${x + 3} 132 L${x - 3} 136 L${x + 3} 140"/>`;
+          s += `<line class="dol-lead" x1="${x}" y1="143" x2="${x}" y2="168"/>`;
+        });
+        s += `<line class="dol-link" x1="65" y1="93" x2="165" y2="93"/>`;
+        s += `<text class="dol-lbl-side" x="195" y="97">KM1</text>`;
+        s += `<text class="dol-lbl-side" x="195" y="42">F1</text>`;
+        s += `<text class="dol-lbl-side" x="195" y="136">F2</text>`;
+
+        // motor terminal box: top row U1,V1,W1 ; bottom row W2,U2,V2 (same columns)
+        const topY = 168, botY = 218;
+        const topLbl = ["U1", "V1", "W1"], botLbl = ["W2", "U2", "V2"];
+        s += `<rect class="dol-tbox" x="45" y="${topY - 8}" width="140" height="${botY - topY + 16}" rx="4"/>`;
+        xs.forEach((x, i) => {
+          s += `<circle class="dol-term" cx="${x}" cy="${topY}" r="2"/>`;
+          s += `<text class="dol-lbl-sub" x="${x}" y="${topY - 12}" text-anchor="middle">${topLbl[i]}</text>`;
+          // KMD: vertical contact linking same column top/bottom
+          s += vcontact(x, (topY + botY) / 2, "no");
+          s += `<circle class="dol-term" cx="${x}" cy="${botY}" r="2"/>`;
+          s += `<text class="dol-lbl-sub" x="${x}" y="${botY + 16}" text-anchor="middle">${botLbl[i]}</text>`;
+        });
+        s += `<text class="dol-lbl-side" x="195" y="${(topY + botY) / 2 + 4}">KMD</text>`;
+
+        // KMY: leads from bottom row down to a 3-pole contactor, then shorted together
+        const kyY = 258;
+        xs.forEach(x => { s += `<line class="dol-lead" x1="${x}" y1="${botY + 8}" x2="${x}" y2="${kyY - 8}"/>`; s += vcontact(x, kyY, "no"); });
+        s += `<line class="dol-link" x1="65" y1="${kyY}" x2="165" y2="${kyY}"/>`;
+        s += `<text class="dol-lbl-side" x="195" y="${kyY + 4}">KMY</text>`;
+        xs.forEach(x => { s += `<line class="dol-lead" x1="${x}" y1="${kyY + 8}" x2="${x}" y2="${kyY + 24}"/>`; });
+        s += `<line class="dol-lead" x1="65" y1="${kyY + 24}" x2="165" y2="${kyY + 24}"/>`;
+        s += `<text class="dol-lbl-sub" x="115" y="${kyY + 38}" text-anchor="middle">star point</text>`;
+
+        return `<svg class="dol-svg dol-power-svg" viewBox="0 0 260 320" role="img" aria-label="Star-delta starter power circuit: supply through fuses and line contactor KM1, overload F2, to a motor terminal box, with KMD linking each column's top and bottom terminal for delta and KMY shorting the bottom row for star">${s}</svg>`;
+      }
+
+      function drawControlCircuit() {
+        const trunkX = 245, loopX = 285;
+        const b1 = 50, b2 = 170, b3 = 320, b4 = 470;
+        let s = "";
+        s += `<line class="dol-rail" x1="${b1}" y1="15" x2="${b4}" y2="15"/>`;
+        s += `<line class="dol-rail" x1="${b1}" y1="330" x2="${b4}" y2="330"/>`;
+        s += `<text class="dol-lbl" x="${b1 - 15}" y="19" text-anchor="end">L</text>`;
+        s += `<text class="dol-lbl" x="${b1 - 15}" y="334" text-anchor="end">N</text>`;
+
+        // common trunk: S0, S1 (seal-in loop bulges right), F2, then a junction bar feeding all four branches
+        s += `<line class="dol-lead" x1="${trunkX}" y1="15" x2="${trunkX}" y2="42"/>`;
+        s += vcontact(trunkX, 50, "nc");
+        s += `<text class="dol-lbl" x="${trunkX - 15}" y="47" text-anchor="end">S0</text>`;
+        s += `<text class="dol-lbl-sub" x="${trunkX - 15}" y="58" text-anchor="end">(Stop)</text>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="58" x2="${trunkX}" y2="75"/>`;
+        s += `<circle class="dol-node" cx="${trunkX}" cy="75" r="2"/>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="75" x2="${trunkX}" y2="92"/>`;
+        s += vcontact(trunkX, 100, "no");
+        s += `<text class="dol-lbl" x="${trunkX - 15}" y="97" text-anchor="end">S1</text>`;
+        s += `<text class="dol-lbl-sub" x="${trunkX - 15}" y="108" text-anchor="end">(Start)</text>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="108" x2="${trunkX}" y2="125"/>`;
+        s += `<circle class="dol-node" cx="${trunkX}" cy="125" r="2"/>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="75" x2="${loopX}" y2="75"/>`;
+        s += `<line class="dol-lead" x1="${loopX}" y1="75" x2="${loopX}" y2="92"/>`;
+        s += vcontact(loopX, 100, "no");
+        s += `<line class="dol-lead" x1="${loopX}" y1="108" x2="${loopX}" y2="125"/>`;
+        s += `<line class="dol-lead" x1="${loopX}" y1="125" x2="${trunkX}" y2="125"/>`;
+        s += `<text class="dol-lbl-sub" x="${loopX + 15}" y="97" text-anchor="start">KM1</text>`;
+        s += `<text class="dol-lbl-sub" x="${loopX + 15}" y="108" text-anchor="start">(13-14)</text>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="125" x2="${trunkX}" y2="142"/>`;
+        s += vcontact(trunkX, 150, "nc");
+        s += `<text class="dol-lbl" x="${trunkX - 15}" y="147" text-anchor="end">F2</text>`;
+        s += `<text class="dol-lbl-sub" x="${trunkX - 15}" y="158" text-anchor="end">(95-96)</text>`;
+        s += `<line class="dol-lead" x1="${trunkX}" y1="158" x2="${trunkX}" y2="175"/>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="175" x2="${b4}" y2="175"/>`;
+        [b1, b2, b3, b4].forEach(bx => { s += `<line class="dol-lead" x1="${bx}" y1="175" x2="${bx}" y2="190"/>`; s += `<circle class="dol-node" cx="${bx}" cy="175" r="2"/>`; });
+
+        // branch 1: KM1 (line contactor) — simple, coil only
+        s += `<line class="dol-lead" x1="${b1}" y1="190" x2="${b1}" y2="270"/>`;
+        s += `<rect class="dol-coil" x="${b1 - 18}" y="270" width="36" height="20"/>`;
+        s += `<text class="dol-coil-lbl" x="${b1 + 24}" y="277" text-anchor="start">KM1</text>`;
+        s += `<text class="dol-lbl-sub" x="${b1 + 24}" y="288" text-anchor="start">(A1-A2)</text>`;
+        s += `<line class="dol-lead" x1="${b1}" y1="290" x2="${b1}" y2="330"/>`;
+
+        // branch 2: KT (timer) — simple, coil only
+        s += `<line class="dol-lead" x1="${b2}" y1="190" x2="${b2}" y2="270"/>`;
+        s += `<rect class="dol-coil" x="${b2 - 18}" y="270" width="36" height="20"/>`;
+        s += `<text class="dol-coil-lbl" x="${b2 + 24}" y="277" text-anchor="start">KT</text>`;
+        s += `<text class="dol-lbl-sub" x="${b2 + 24}" y="288" text-anchor="start">(A1-A2)</text>`;
+        s += `<line class="dol-lead" x1="${b2}" y1="290" x2="${b2}" y2="330"/>`;
+
+        // branch 3: KT delay-open -> KMD interlock (NC) -> KMY coil
+        s += `<line class="dol-lead" x1="${b3}" y1="190" x2="${b3}" y2="192"/>`;
+        s += vcontact(b3, 200, "nc");
+        s += `<text class="dol-lbl-sub" x="${b3 + 15}" y="197" text-anchor="start">KT</text>`;
+        s += `<text class="dol-lbl-sub" x="${b3 + 15}" y="208" text-anchor="start">(delay-open)</text>`;
+        s += `<line class="dol-lead" x1="${b3}" y1="208" x2="${b3}" y2="232"/>`;
+        s += vcontact(b3, 240, "nc");
+        s += `<text class="dol-lbl-sub" x="${b3 + 15}" y="237" text-anchor="start">KMD</text>`;
+        s += `<text class="dol-lbl-sub" x="${b3 + 15}" y="248" text-anchor="start">(21-22)</text>`;
+        s += `<line class="dol-lead" x1="${b3}" y1="248" x2="${b3}" y2="270"/>`;
+        s += `<rect class="dol-coil" x="${b3 - 18}" y="270" width="36" height="20"/>`;
+        s += `<text class="dol-coil-lbl" x="${b3 + 24}" y="277" text-anchor="start">KMY</text>`;
+        s += `<text class="dol-lbl-sub" x="${b3 + 24}" y="288" text-anchor="start">(A1-A2)</text>`;
+        s += `<line class="dol-lead" x1="${b3}" y1="290" x2="${b3}" y2="330"/>`;
+
+        // branch 4: KT delay-closed -> KMY interlock (NC) -> KMD coil
+        s += `<line class="dol-lead" x1="${b4}" y1="190" x2="${b4}" y2="192"/>`;
+        s += vcontact(b4, 200, "no");
+        s += `<text class="dol-lbl-sub" x="${b4 + 15}" y="197" text-anchor="start">KT</text>`;
+        s += `<text class="dol-lbl-sub" x="${b4 + 15}" y="208" text-anchor="start">(delay-closed)</text>`;
+        s += `<line class="dol-lead" x1="${b4}" y1="208" x2="${b4}" y2="232"/>`;
+        s += vcontact(b4, 240, "nc");
+        s += `<text class="dol-lbl-sub" x="${b4 + 15}" y="237" text-anchor="start">KMY</text>`;
+        s += `<text class="dol-lbl-sub" x="${b4 + 15}" y="248" text-anchor="start">(21-22)</text>`;
+        s += `<line class="dol-lead" x1="${b4}" y1="248" x2="${b4}" y2="270"/>`;
+        s += `<rect class="dol-coil" x="${b4 - 18}" y="270" width="36" height="20"/>`;
+        s += `<text class="dol-coil-lbl" x="${b4 + 24}" y="277" text-anchor="start">KMD</text>`;
+        s += `<text class="dol-lbl-sub" x="${b4 + 24}" y="288" text-anchor="start">(A1-A2)</text>`;
+        s += `<line class="dol-lead" x1="${b4}" y1="290" x2="${b4}" y2="330"/>`;
+
+        return `<svg class="dol-svg dol-control-svg" viewBox="0 0 620 350" role="img" aria-label="Star-delta control circuit, drawn top to bottom: stop, start, and overload trip on a shared trunk, splitting into four branches for the line contactor KM1, timer KT, star contactor KMY, and delta contactor KMD, with timer-sequenced and mutually interlocked KMY/KMD">${s}</svg>`;
+      }
+
+      root.innerHTML = "";
+      const panel = el("div", "panel");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>STAR-DELTA STARTER</h2>
+        </div>
+        <div class="dol-section">
+          <div class="dol-section-head">POWER CIRCUIT</div>
+          <div class="dol-power-wrap">${drawPowerCircuit()}</div>
+        </div>
+        <div class="dol-section">
+          <div class="dol-section-head">CONTROL CIRCUIT</div>
+          ${drawControlCircuit()}
+        </div>
+        <div class="dol-legend">
+          <span><b>NO</b> — normally open, closes when actuated</span>
+          <span><b>NC</b> — normally closed, opens when actuated</span>
+        </div>`;
+      root.appendChild(panel);
+      root.appendChild(el("p", "note", `<span class="k">i</span><span>KM1 and KMY close together to start in star (reduced voltage per winding); after KT's delay, KMY drops out and KMD closes for the full-voltage delta run. KMY and KMD must never be closed together — that would short two line terminals through the winding — so each coil's circuit is interlocked with an NC auxiliary contact from the other. Motor terminal U1/V1/W1 (winding starts) and W2/U2/V2 (winding ends) follow the standard offset layout so KMY's bridge (bottom row) and KMD's bridge (same-column top-to-bottom) are simple, direct links; internal winding routing isn't shown. Verify against the motor and contactor datasheets and local code before wiring.</span>`));
+    },
+  };
+
+  /* ============================================================
+     TOOL 25 — SERIES/PARALLEL RLC
+     ============================================================ */
+  const SeriesParallelRLC = {
+    id: "rlc",
+    discipline: "ELECTRICAL",
+    title: "Series/parallel RLC calculator",
+    subtitle: "Set R, L, and C to get the resonant frequency, Q, and bandwidth for a series or parallel RLC network — add a signal frequency to see the impedance and phase there, and where it sits relative to resonance.",
+
+    mount(root) {
+      const st = { mode: "series" };
+      const raw = { R: "10", L: "10", C: "1", f: "2000" };
+      const chans = {};
+
+      root.innerHTML = "";
+      const panel = el("div", "panel");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>RLC NETWORK</h2>
+          <div class="legend"><span><i class="dot set"></i> SET</span><span><i class="dot meas"></i> MEASURED</span></div>
+        </div>
+        <div class="selectors">
+          <div class="seg-field"><span class="seg-label">CONFIGURATION</span>
+            <div class="seg" data-group="mode"><button data-v="series" class="on">Series</button><button data-v="parallel">Parallel</button></div>
+          </div>
+        </div>
+        <div class="pt-layout">
+          <div class="pt-stage">
+            <div class="rlc-viz"></div>
+            <div class="ratio-badge"><div class="r empty">——</div><div class="lbl">RESONANT FREQUENCY</div></div>
+          </div>
+          <div class="channels cols-2 rlc-inputs"></div>
+        </div>
+        <div class="outputs-wrap"><div class="channels cols-4 rlc-outputs"></div></div>
+        <div class="status"><div class="status-msg"></div><button class="btn-reset">CLEAR</button></div>`;
+      root.appendChild(panel);
+      root.appendChild(el("p", "note", `<span class="k">i</span><span>Resonant frequency f₀ = 1/(2π√LC) is the same formula for both configurations, but Q and bandwidth are not: series Q = ω₀L/R rises with <b>less</b> resistance, while parallel Q = R/(ω₀L) rises with <b>more</b> resistance — the two topologies respond to R in opposite directions. Series RLC is capacitive below resonance and inductive above; parallel RLC is the reverse.</span>`));
+
+      const vizEl = panel.querySelector(".rlc-viz");
+      const inputsEl = panel.querySelector(".rlc-inputs");
+      const outsEl = panel.querySelector(".rlc-outputs");
+      const statusEl = panel.querySelector(".status-msg");
+      const badgeEl = panel.querySelector(".ratio-badge .r");
+      const badgeLbl = panel.querySelector(".ratio-badge .lbl");
+
+      const inDefs = [
+        { key: "R", sym: "R", name: "Resistance", unit: "Ω" },
+        { key: "L", sym: "L", name: "Inductance", unit: "mH" },
+        { key: "C", sym: "C", name: "Capacitance", unit: "µF" },
+        { key: "f", sym: "f", name: "Signal frequency", unit: "Hz" },
+      ];
+      inDefs.forEach(d => {
+        const c = makeChannel(d); chans[d.key] = c; inputsEl.appendChild(c.el);
+        if (raw[d.key]) chInput(c, raw[d.key]); else chEmpty(c);
+        c.input.addEventListener("input", e => { raw[d.key] = e.target.value; recompute(); });
+      });
+
+      const outDefs = [
+        { key: "Q", sym: "Q", name: "Quality factor", unit: "ratio" },
+        { key: "BW", sym: "BW", name: "Bandwidth", unit: "Hz" },
+        { key: "Z", sym: "Z", name: "Impedance at f", unit: "Ω" },
+        { key: "theta", sym: "∠Z", name: "Phase at f", unit: "°" },
+      ];
+      outDefs.forEach(d => { const c = makeChannel(d); chans[d.key] = c; outsEl.appendChild(c.el); chPending(c); });
+
+      panel.querySelectorAll(".seg button").forEach(btn => btn.addEventListener("click", () => {
+        st.mode = btn.dataset.v;
+        panel.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b === btn));
+        recompute();
+      }));
+
+      const num = k => { const v = parseFloat(raw[k]); return Number.isNaN(v) ? undefined : v; };
+
+      function magZ(f, R, L_H, C_F) {
+        const w = 2 * Math.PI * f;
+        if (st.mode === "series") {
+          const XL = w * L_H, XC = 1 / (w * C_F);
+          return Math.sqrt(R * R + (XL - XC) * (XL - XC));
+        }
+        const BL = 1 / (w * L_H), BC = w * C_F, G = 1 / R;
+        return 1 / Math.sqrt(G * G + (BC - BL) * (BC - BL));
+      }
+
+      function recompute() {
+        inDefs.forEach(d => chInput(chans[d.key], raw[d.key]));
+        const R = num("R"), L = num("L"), C = num("C"), f = num("f");
+        const need = [];
+        if (!(R > 0)) need.push("resistance");
+        if (!(L > 0)) need.push("inductance");
+        if (!(C > 0)) need.push("capacitance");
+
+        if (need.length) {
+          outDefs.forEach(d => chPending(chans[d.key]));
+          badgeEl.textContent = "——"; badgeEl.classList.add("empty"); badgeLbl.textContent = "RESONANT FREQUENCY";
+          statusEl.className = "status-msg";
+          statusEl.textContent = "Add the " + need.join(", ") + " to solve.";
+          drawBode(null);
+          return;
+        }
+
+        const L_H = L * 1e-3, C_F = C * 1e-6;
+        const w0 = 1 / Math.sqrt(L_H * C_F);
+        const f0 = w0 / (2 * Math.PI);
+        const Q = st.mode === "series" ? (w0 * L_H) / R : R / (w0 * L_H);
+        const BW = f0 / Q;
+
+        badgeEl.textContent = formatSI(f0, "Hz"); badgeEl.classList.remove("empty");
+        badgeLbl.textContent = "RESONANT FREQUENCY";
+        chMeasured(chans.Q, fmt(Q));
+        chMeasured(chans.BW, formatSI(BW, "Hz"));
+
+        if (f > 0) {
+          const w = 2 * Math.PI * f;
+          let Zval, thetaVal, regime;
+          if (st.mode === "series") {
+            const XL = w * L_H, XC = 1 / (w * C_F), X = XL - XC;
+            Zval = Math.sqrt(R * R + X * X);
+            thetaVal = Math.atan2(X, R) * 180 / Math.PI;
+            regime = Math.abs(X) < Zval * 0.01 ? "AT RESONANCE" : (X < 0 ? "BELOW RESONANCE · CAPACITIVE" : "ABOVE RESONANCE · INDUCTIVE");
+          } else {
+            const BL = 1 / (w * L_H), BC = w * C_F, G = 1 / R, B = BC - BL;
+            const Y = Math.sqrt(G * G + B * B);
+            Zval = 1 / Y;
+            thetaVal = -Math.atan2(B, G) * 180 / Math.PI;
+            regime = Math.abs(B) < Y * 0.01 ? "AT RESONANCE" : (B < 0 ? "BELOW RESONANCE · INDUCTIVE" : "ABOVE RESONANCE · CAPACITIVE");
+          }
+          chMeasured(chans.Z, formatSI(Zval, "Ω"));
+          chMeasured(chans.theta, `${fmt(thetaVal)}°`);
+          statusEl.className = "status-msg";
+          statusEl.textContent = `f₀ = ${formatSI(f0, "Hz")} · Q = ${fmt(Q)} · ${regime.toLowerCase()}`;
+        } else {
+          chPending(chans.Z); chPending(chans.theta);
+          statusEl.className = "status-msg";
+          statusEl.textContent = `f₀ = ${formatSI(f0, "Hz")} · Q = ${fmt(Q)} · BW = ${formatSI(BW, "Hz")}. Add a signal frequency for impedance and phase.`;
+        }
+
+        drawBode(f0, f, R, L_H, C_F);
+      }
+
+      function drawBode(f0, fSig, R, L_H, C_F) {
+        const W = 320, H = 200, x0 = 40, x1 = 300, y0 = 20, y1 = 156;
+        if (!f0) {
+          vizEl.innerHTML = `<svg class="filter-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="No RLC values set yet">
+            <line class="filter-grid" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/>
+            <line class="filter-grid" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}"/>
+          </svg>`;
+          return;
+        }
+        const fLo = f0 * 1e-2, fHi = f0 * 1e2;
+        const xOf = f => x0 + (Math.log10(f) - Math.log10(fLo)) / (Math.log10(fHi) - Math.log10(fLo)) * (x1 - x0);
+
+        const N = 120;
+        const pts = [];
+        let zMax = R;
+        for (let i = 0; i <= N; i++) {
+          const f = fLo * Math.pow(fHi / fLo, i / N);
+          const z = magZ(f, R, L_H, C_F);
+          pts.push([f, z]);
+          if (z > zMax) zMax = z;
+        }
+        const yOf = z => y1 - (z / zMax) * (y1 - y0) * 0.92;
+        let curve = "";
+        pts.forEach(([f, z], i) => { curve += (i ? "L" : "M") + xOf(f).toFixed(1) + " " + yOf(z).toFixed(1) + " "; });
+
+        let grid = "";
+        for (let d = -2; d <= 2; d++) { const gx = xOf(f0 * Math.pow(10, d)); grid += `<line class="filter-grid" x1="${gx.toFixed(1)}" y1="${y0}" x2="${gx.toFixed(1)}" y2="${y1}"/>`; }
+
+        const xf0 = xOf(f0);
+        let op = "";
+        if (fSig > 0) {
+          const cf = Math.max(fLo, Math.min(fHi, fSig));
+          const ox = xOf(cf), oy = yOf(magZ(fSig, R, L_H, C_F));
+          op = `<line class="filter-cutoff" x1="${ox.toFixed(1)}" y1="${oy.toFixed(1)}" x2="${ox.toFixed(1)}" y2="${y1}"/><circle class="filter-op" cx="${ox.toFixed(1)}" cy="${oy.toFixed(1)}" r="4"/>`;
+        }
+
+        vizEl.innerHTML = `<svg class="filter-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Impedance magnitude versus frequency, ${st.mode} RLC, resonance at ${formatSI(f0, 'Hz')}">
+          ${grid}
+          <line class="filter-cutoff" x1="${xf0.toFixed(1)}" y1="${y0}" x2="${xf0.toFixed(1)}" y2="${y1}"/>
+          <path class="filter-curve" d="${curve}"/>
+          ${op}
+          <text class="filter-tick-label" x="${xf0.toFixed(1)}" y="${(y0 - 6).toFixed(1)}" text-anchor="middle">f₀</text>
+          <line class="filter-grid" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/>
+          <line class="filter-grid" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}"/>
+        </svg>`;
+      }
+
+      panel.querySelector(".btn-reset").addEventListener("click", () => {
+        Object.assign(raw, { R: "", L: "", C: "", f: "" });
+        inDefs.forEach(d => chEmpty(chans[d.key]));
+        recompute(); chans.R.input.focus();
+      });
+
+      recompute();
+    },
+  };
+
+  /* ============================================================
      ROUTER + SIDEBAR
      ============================================================ */
-  const MODULES = { ohms: OhmsLaw, gear: GearRatio, beam: BeamDeflection, chain: ChainPitch, vdiv: VoltageDivider, rcode: ResistorCodes, reynolds: ReynoldsNumber, vdrop: VoltageDrop, filter: RCFilter, timer555: Timer555, opamp: OpAmpGain, units: UnitConverter, dimensional: DimensionalAnalysis, mtorque: MotorTorque, mfla: MotorFLA, vfdcable: VFDCable, acpower: ACPowerTriangle, acimpedance: ACImpedance, pfc: PowerFactorCorrection, blownfilm: BlownFilmProcess, bubblestress: BubbleStress };
+  const MODULES = { ohms: OhmsLaw, gear: GearRatio, beam: BeamDeflection, chain: ChainPitch, vdiv: VoltageDivider, rcode: ResistorCodes, reynolds: ReynoldsNumber, vdrop: VoltageDrop, filter: RCFilter, timer555: Timer555, opamp: OpAmpGain, units: UnitConverter, dimensional: DimensionalAnalysis, mtorque: MotorTorque, mfla: MotorFLA, vfdcable: VFDCable, acpower: ACPowerTriangle, acimpedance: ACImpedance, pfc: PowerFactorCorrection, blownfilm: BlownFilmProcess, bubblestress: BubbleStress, dolstarter: DOLStarter, fwdrev: FwdRevStarter, stardelta: StarDeltaStarter, rlc: SeriesParallelRLC };
   const DISCIPLINES = [
     { name: "ELECTRICAL", tools: [
       { id: "ohms", name: "Ohm's Law", status: "active" },
@@ -4389,6 +5107,10 @@
       { id: "acpower", name: "AC Power Triangle", status: "active" },
       { id: "acimpedance", name: "AC Impedance", status: "active" },
       { id: "pfc", name: "Power Factor Correction", status: "active" },
+      { id: "dolstarter", name: "DOL Starter Wiring", status: "active" },
+      { id: "fwdrev", name: "Forward/Reverse Starter Wiring", status: "active" },
+      { id: "stardelta", name: "Star-Delta Starter Wiring", status: "active" },
+      { id: "rlc", name: "Series/Parallel RLC", status: "active" },
     ]},
     { name: "MECHANICAL", tools: [
       { id: "gear", name: "Gear Ratio", status: "active" },
