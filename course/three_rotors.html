@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Same Field, Three Rotors — IM · PMSM · SynRM</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --gold:#F2C078; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C;
+    --good:#2E7D57;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.45;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{background:var(--card); border:1px solid var(--tint);
+    border-radius:8px; padding:14px; margin-bottom:14px;}
+  svg{display:block; width:100%; height:auto;}
+  .seg{display:inline-flex; border:1px solid var(--tint); border-radius:7px; overflow:hidden; width:100%;}
+  .seg button{flex:1; background:#fff; color:var(--navy); border:none; font:inherit;
+    font-weight:600; font-size:.8rem; padding:9px 6px; cursor:pointer;}
+  .seg button+button{border-left:1px solid var(--tint);}
+  .seg button.on{background:var(--steel); color:#fff;}
+  .seg button:focus-visible{outline:3px solid var(--copper); outline-offset:-3px;}
+  .ldrow{display:flex; align-items:center; gap:12px; margin-top:12px;}
+  .ldrow .lbl{font-size:.74rem; color:var(--muted); font-weight:600; white-space:nowrap;}
+  input[type=range]{flex:1; accent-color:var(--crimson); height:26px;}
+  input[type=range]:focus-visible{outline:3px solid var(--copper); outline-offset:3px;}
+  .readouts{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:14px;}
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:7px 2px; text-align:center;}
+  .ro .lab{font-size:.53rem; letter-spacing:.03em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; font-weight:700; margin-top:2px;}
+  .ro.loss .val{color:var(--gold);}
+  .lossbar{height:8px; background:#E7EDF3; border-radius:4px; margin-top:10px; overflow:hidden;}
+  .lossbar i{display:block; height:100%; width:0; background:var(--crimson); transition:width .15s ease;}
+  .losslab{font-size:.66rem; color:var(--muted); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin-top:5px;}
+  .status{margin-top:12px; border-radius:7px; padding:9px 12px; color:#fff; font-size:.82rem; font-weight:600;}
+  .status.ok{background:var(--good);} .status.warn{background:var(--copper);} .status.bad{background:var(--crimson);}
+  .charnote{font-size:.8rem; color:var(--muted); margin-top:10px;}
+  .charnote b{color:var(--ink);}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 12px;}
+  .note b{color:var(--ink);}
+  .site-footer{background:var(--navy); color:#fff; margin:24px -14px 0; padding:13px 20px;
+    border-top:3px solid var(--copper); display:flex; flex-wrap:wrap; justify-content:space-between;
+    align-items:baseline; gap:8px 14px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;}
+  .site-footer .brand{font-weight:700; letter-spacing:.04em;}
+  .site-footer .brand em{font-style:normal; color:var(--gold);}
+  .site-footer .mod{color:var(--tint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Same Field, Three Rotors — watch how each one answers</h1>
+    <p>Crimson pointer = the rotating field · inner pointer = the rotor · Module 5</p>
+  </header>
+
+  <div class="card">
+    <span class="seg" id="segT">
+      <button data-t="im" class="on">Induction</button>
+      <button data-t="pm">PM synchronous</button>
+      <button data-t="syn">Synch. reluctance</button>
+    </span>
+
+    <svg viewBox="-130 -130 260 260" role="img" aria-label="Rotating field with a selectable rotor type showing slip or load angle">
+      <!-- stator bore -->
+      <circle cx="0" cy="0" r="112" fill="#F7FAFD" stroke="#3C556B" stroke-width="2"/>
+      <circle cx="0" cy="0" r="108" fill="none" stroke="#DCE5EE" stroke-width="6"/>
+
+      <!-- ROTOR (rotated by JS) -->
+      <g id="rotor">
+        <circle cx="0" cy="0" r="70" fill="#EEF3F8" stroke="#3C556B" stroke-width="1.6"/>
+        <!-- induction rotor -->
+        <g id="rIM"></g>
+        <!-- PM rotor: N (crimson) / S (steel) poles -->
+        <g id="rPM">
+          <path d="M0,0 L-38,-58 A70,70 0 0,1 38,-58 Z" fill="#C8231E" opacity=".82"/>
+          <path d="M0,0 L38,58 A70,70 0 0,1 -38,58 Z" fill="#2463A8" opacity=".82"/>
+          <text x="0" y="-40" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">N</text>
+          <text x="0" y="52" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">S</text>
+        </g>
+        <!-- SynRM rotor: flux barriers + salient d-axis -->
+        <g id="rSyn">
+          <path d="M-20,-60 Q0,-30 20,-60" fill="none" stroke="#3C556B" stroke-width="3.2"/>
+          <path d="M-32,-46 Q0,-12 32,-46" fill="none" stroke="#3C556B" stroke-width="3.2"/>
+          <path d="M-20,60 Q0,30 20,60" fill="none" stroke="#3C556B" stroke-width="3.2"/>
+          <path d="M-32,46 Q0,12 32,46" fill="none" stroke="#3C556B" stroke-width="3.2"/>
+          <text x="44" y="4" text-anchor="middle" fill="#9FB2C4" font-size="9" font-family="monospace">q</text>
+        </g>
+        <!-- rotor pointer (d-axis) -->
+        <line x1="0" y1="0" x2="0" y2="-64" stroke="#B5651E" stroke-width="4" stroke-linecap="round" marker-end="url(#hRot)"/>
+      </g>
+
+      <!-- FIELD pointer (rotated by JS), in the outer annulus -->
+      <g id="field">
+        <line x1="0" y1="-74" x2="0" y2="-104" stroke="#C8231E" stroke-width="5" stroke-linecap="round" marker-end="url(#hFld)"/>
+        <circle cx="0" cy="-108" r="4" fill="#C8231E"/>
+      </g>
+
+      <defs>
+        <marker id="hFld" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#C8231E"/></marker>
+        <marker id="hRot" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#B5651E"/></marker>
+      </defs>
+    </svg>
+
+    <div class="ldrow">
+      <span class="lbl">Load</span>
+      <input id="load" type="range" min="0" max="1.2" step="0.02" value="0.4" aria-label="Shaft load per unit of pull-out">
+    </div>
+
+    <div class="readouts">
+      <div class="ro"><div class="lab">Speed</div><div class="val" id="roN">1470</div></div>
+      <div class="ro"><div class="lab" id="mLab">Slip</div><div class="val" id="roM">2.0%</div></div>
+      <div class="ro loss"><div class="lab">Rotor loss</div><div class="val" id="roL">2.0%</div></div>
+      <div class="ro"><div class="lab">Pwr factor</div><div class="val" id="roPF">0.86</div></div>
+    </div>
+
+    <div class="lossbar"><i id="lossFill"></i></div>
+    <div class="losslab" id="lossLab">rotor heat rises with slip</div>
+
+    <div class="status ok" id="status">Running — rotor locked to the field</div>
+    <div class="charnote" id="charnote"></div>
+  </div>
+
+  <p class="note"><b>What to watch:</b> add load and see how the two pointers separate. On the <b>induction</b> rotor the copper pointer keeps <b>drifting backwards</b> — it never catches the field, and the wider the gap, the more rotor heat (watch the bar climb). Switch to <b>PM</b> or <b>reluctance</b> and the rotor <b>locks</b> to the field: load just tips it back by a fixed <b>load angle δ</b>, speed stays exactly synchronous, and rotor loss sits at zero. Push load past 1.0 and the synchronous rotor <b>pulls out</b> — δ passes 90°, it loses the field entirely and falls away. That's the synchronous machine's version of breakdown.</p>
+
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 5</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  // build induction cage bars once
+  (function(){ let s=""; for(let i=0;i<24;i++){ const a=i/24*2*Math.PI;
+    const x1=58*Math.sin(a), y1=-58*Math.cos(a), x2=68*Math.sin(a), y2=-68*Math.cos(a);
+    s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#9FB2C4" stroke-width="3"/>`; }
+    $("rIM").innerHTML=s; })();
+
+  const PF={im:"0.86", pm:"0.96", syn:"0.72"};
+  const CHAR={
+    im:"<b>Induction:</b> rotor current makes the torque — it must slip, so the rotor always runs hot. Cheap, rugged, runs direct-on-line.",
+    pm:"<b>PM synchronous:</b> magnets pre-magnetise the rotor, so it locks to the field with near-zero rotor loss and the best torque density. Costs magnets, and heat can demagnetise them. Always needs a drive.",
+    syn:"<b>Synchronous reluctance:</b> a shaped steel rotor aligns to the field — no magnets, no rotor current, cool and cheap. Poorer power factor, so it leans harder on the drive. Always needs a drive."
+  };
+  const ws=55;                    // deg/sec on screen (= 1500 rpm nominal)
+  let type="im", L=0.4;
+  let Af=0, Aim=0, Apo=0, spd=1, last=null;
+
+  function slip(L){ let s=0.02+0.14*Math.min(L,1); if(L>1) s+=(L-1)*0.9; return Math.min(0.9,s); }
+
+  function setRotorGraphic(){
+    $("rIM").style.display  = type==="im"?"":"none";
+    $("rPM").style.display  = type==="pm"?"":"none";
+    $("rSyn").style.display = type==="syn"?"":"none";
+    document.querySelectorAll("#segT button").forEach(b=>b.classList.toggle("on",b.dataset.t===type));
+  }
+
+  function frame(ts){
+    if(last==null) last=ts; const dt=Math.min(0.05,(ts-last)/1000); last=ts;
+    Af += ws*dt;
+
+    let Ar, N, metricLab, metricVal, loss, status, sClass;
+    if(type==="im"){
+      const s=slip(L);
+      Aim += ws*(1-s)*dt; Ar=Aim;
+      N=Math.round(1500*(1-s));
+      metricLab="Slip"; metricVal=(s*100).toFixed(1)+"%";
+      loss=s*100;
+      if(L>1.0){ status="Overloaded — sliding toward stall"; sClass="bad"; }
+      else if(L>0.85){ status="Heavy load — high slip, rotor hot"; sClass="warn"; }
+      else { status="Running — rotor slipping behind the field"; sClass="ok"; }
+    } else {
+      if(L<=1.0){
+        const d=90*L; Ar=Af-d; Apo=Ar; spd=1;
+        N=1500; metricLab="Load angle δ"; metricVal=Math.round(d)+"°"; loss=0.4;
+        if(L>0.85){ status="Near pull-out — δ approaching 90°"; sClass="warn"; }
+        else { status="Locked to the field — zero slip"; sClass="ok"; }
+      } else {
+        spd=Math.max(0,spd-0.55*dt); Apo+=ws*spd*dt; Ar=Apo;
+        N=Math.round(1500*spd); metricLab="Load angle δ"; metricVal="PULLED OUT"; loss=0.4;
+        status="Pulled out — lost sync, rotor falling away"; sClass="bad";
+      }
+    }
+
+    $("field").setAttribute("transform",`rotate(${Af%360})`);
+    $("rotor").setAttribute("transform",`rotate(${Ar%360})`);
+    $("roN").textContent=N;
+    $("mLab").textContent=metricLab; $("roM").textContent=metricVal;
+    $("roL").textContent = type==="im" ? loss.toFixed(1)+"%" : "≈0%";
+    $("roPF").textContent=PF[type];
+    $("lossFill").style.width = Math.min(100, type==="im"?loss*4:1) + "%";
+    $("lossLab").textContent = type==="im" ? "rotor heat rises with slip" : "no rotor current → no rotor heat";
+    const st=$("status"); st.textContent=status; st.className="status "+sClass;
+
+    requestAnimationFrame(frame);
+  }
+
+  $("segT").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return;
+    type=b.dataset.t; setRotorGraphic(); $("charnote").innerHTML=CHAR[type]; });
+  $("load").addEventListener("input",e=>{ L=+e.target.value; });
+
+  setRotorGraphic(); $("charnote").innerHTML=CHAR[type];
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

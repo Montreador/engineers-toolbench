@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inside the Drive — Rectifier · DC Bus · Inverter · PWM</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --gold:#F2C078; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C; --good:#2E7D57;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.45;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{background:var(--card); border:1px solid var(--tint); border-radius:8px; padding:14px; margin-bottom:14px;}
+  .card h2{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--slate); margin:0 0 8px;}
+  svg{display:block; width:100%; height:auto;}
+  .blab{font-size:9px; font-weight:700; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .bsub{font-size:7.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; fill:var(--muted);}
+  .srow{display:grid; grid-template-columns:92px 1fr 60px; align-items:center; gap:10px; margin-top:10px;}
+  .srow label{font-size:.8rem; font-weight:600;}
+  .srow .v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.8rem; text-align:right; color:var(--navy);}
+  #mod{accent-color:var(--steel);} #carrier{accent-color:var(--copper);} #ofreq{accent-color:var(--crimson);}
+  input[type=range]{width:100%; height:26px;}
+  input[type=range]:focus-visible{outline:3px solid var(--copper); outline-offset:3px;}
+  .readouts{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:14px;}
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:7px 2px; text-align:center;}
+  .ro .lab{font-size:.52rem; letter-spacing:.03em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; font-weight:700; margin-top:2px;}
+  .ro.v .val{color:var(--gold);}
+  .status{margin-top:12px; border-radius:7px; padding:9px 12px; color:#fff; font-size:.8rem; font-weight:600;}
+  .status.ok{background:var(--good);} .status.warn{background:var(--copper);} .status.cool{background:var(--steel);}
+  .legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:9px; font-size:.72rem;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:15px; height:3px; border-radius:2px; display:inline-block;}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 12px;} .note b{color:var(--ink);}
+  .site-footer{background:var(--navy); color:#fff; margin:24px -14px 0; padding:13px 20px;
+    border-top:3px solid var(--copper); display:flex; flex-wrap:wrap; justify-content:space-between;
+    align-items:baseline; gap:8px 14px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;}
+  .site-footer .brand{font-weight:700; letter-spacing:.04em;} .site-footer .brand em{font-style:normal; color:var(--gold);}
+  .site-footer .mod{color:var(--tint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Inside the Drive — from fixed mains to adjustable AC</h1>
+    <p>AC → rectifier → DC bus → inverter → motor · Module 7</p>
+  </header>
+
+  <!-- POWER CHAIN (static) -->
+  <div class="card">
+    <h2>The power-conversion chain</h2>
+    <svg viewBox="0 0 400 190" role="img" aria-label="Block diagram of the drive power stage">
+      <!-- flow arrow baseline -->
+      <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3C556B"/></marker></defs>
+
+      <!-- AC in -->
+      <circle cx="30" cy="70" r="15" fill="#fff" stroke="#3C556B" stroke-width="1.6"/>
+      <path d="M22,70 q4,-7 8,0 t8,0" fill="none" stroke="#2463A8" stroke-width="1.6"/>
+      <text class="blab" x="30" y="100" text-anchor="middle" fill="#1A2B3B">3~ AC</text>
+      <text class="bsub" x="30" y="110" text-anchor="middle">400 V 50 Hz</text>
+
+      <!-- rectifier -->
+      <rect x="70" y="45" width="72" height="50" rx="5" fill="#F7FAFD" stroke="#3C556B" stroke-width="1.6"/>
+      <path d="M88,60 l10,6 l-10,6 Z" fill="none" stroke="#B5651E" stroke-width="1.4"/><line x1="98" y1="58" x2="98" y2="74" stroke="#B5651E" stroke-width="1.4"/>
+      <path d="M112,60 l10,6 l-10,6 Z" fill="none" stroke="#B5651E" stroke-width="1.4"/><line x1="122" y1="58" x2="122" y2="74" stroke="#B5651E" stroke-width="1.4"/>
+      <text class="blab" x="106" y="108" text-anchor="middle" fill="#1A2B3B">Rectifier</text>
+      <text class="bsub" x="106" y="118" text-anchor="middle">6 diodes</text>
+
+      <!-- DC bus -->
+      <rect x="170" y="45" width="60" height="50" rx="5" fill="#F7FAFD" stroke="#3C556B" stroke-width="1.6"/>
+      <line x1="190" y1="55" x2="190" y2="85" stroke="#2463A8" stroke-width="2.4"/>
+      <line x1="200" y1="55" x2="200" y2="85" stroke="#2463A8" stroke-width="4.5"/>
+      <text class="blab" x="200" y="108" text-anchor="middle" fill="#C8231E">DC bus</text>
+      <text class="bsub" x="200" y="118" text-anchor="middle">≈ 565 V</text>
+      <!-- brake chopper + resistor tap -->
+      <line x1="210" y1="45" x2="210" y2="26" stroke="#3C556B" stroke-width="1.4"/>
+      <rect x="203" y="12" width="14" height="14" fill="none" stroke="#C8231E" stroke-width="1.4"/>
+      <path d="M217,19 h16 m0,-4 v8" stroke="#3C556B" stroke-width="1.2" fill="none"/>
+      <rect x="233" y="13" width="20" height="12" fill="none" stroke="#B5651E" stroke-width="1.4"/>
+      <text class="bsub" x="262" y="22" fill="#B5651E">brake R</text>
+
+      <!-- inverter -->
+      <rect x="258" y="45" width="72" height="50" rx="5" fill="#F7FAFD" stroke="#3C556B" stroke-width="1.6"/>
+      <path d="M276,58 v14 M276,65 h9 M285,60 v10" stroke="#2463A8" stroke-width="1.6" fill="none"/>
+      <path d="M300,58 v14 M300,65 h9 M309,60 v10" stroke="#2463A8" stroke-width="1.6" fill="none"/>
+      <text class="blab" x="294" y="108" text-anchor="middle" fill="#1A2B3B">Inverter</text>
+      <text class="bsub" x="294" y="118" text-anchor="middle">6 IGBTs</text>
+
+      <!-- motor -->
+      <circle cx="368" cy="70" r="16" fill="#fff" stroke="#3C556B" stroke-width="1.6"/>
+      <text class="blab" x="368" y="74" text-anchor="middle" fill="#1A2B3B" font-size="12">M</text>
+      <text class="bsub" x="368" y="100" text-anchor="middle">motor</text>
+
+      <!-- connecting arrows -->
+      <line x1="45" y1="70" x2="68" y2="70" stroke="#3C556B" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="142" y1="70" x2="168" y2="70" stroke="#3C556B" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="230" y1="70" x2="256" y2="70" stroke="#3C556B" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="330" y1="70" x2="350" y2="70" stroke="#3C556B" stroke-width="1.6" marker-end="url(#arr)"/>
+
+      <!-- fixed vs adjustable labels -->
+      <text class="bsub" x="106" y="160" text-anchor="middle" fill="#3C556B">fixed frequency in</text>
+      <line x1="150" y1="156" x2="250" y2="156" stroke="#DCE5EE" stroke-width="1"/>
+      <text class="bsub" x="294" y="160" text-anchor="middle" fill="#C8231E">adjustable V &amp; f out</text>
+      <!-- regen note -->
+      <path d="M350,84 q-160,40 -230,-4" fill="none" stroke="#B5651E" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+      <text class="bsub" x="235" y="182" text-anchor="middle" fill="#B5651E">regen energy floods back onto the bus → brake resistor dumps it as heat</text>
+    </svg>
+    <p class="note" style="margin-bottom:0">The rectified bus sits at <b>√2 × 400 ≈ 565 V DC</b> — lethal, and still charged after isolation. The diode front end is a one-way street: it can't push energy back to mains, so anything the motor <b>regenerates</b> piles onto the bus and the <b>brake resistor</b> burns it off. That's your overvoltage-on-decel trip, at the hardware level.</p>
+  </div>
+
+  <!-- PWM SYNTHESISER -->
+  <div class="card">
+    <h2>How the inverter fakes a sine — PWM</h2>
+    <svg id="pwm" viewBox="0 0 400 300" role="img" aria-label="Sine reference against triangle carrier, and the resulting PWM pulses and motor current">
+      <text class="bsub" x="44" y="12" fill="#3C556B">reference sine vs triangle carrier</text>
+      <line x1="44" y1="68" x2="384" y2="68" stroke="#E3EAF1" stroke-width="1"/>
+      <polyline id="carrierP" fill="none" stroke="#B9C6D6" stroke-width="1.2"/>
+      <polyline id="sineP" fill="none" stroke="#2463A8" stroke-width="2.4"/>
+
+      <text class="bsub" x="44" y="152" fill="#3C556B">PWM output pulses (± 282 V) &amp; motor current</text>
+      <line x1="44" y1="215" x2="384" y2="215" stroke="#E3EAF1" stroke-width="1"/>
+      <text class="bsub" x="388" y="166" text-anchor="end" fill="#9FB2C4">+282 V</text>
+      <text class="bsub" x="388" y="272" text-anchor="end" fill="#9FB2C4">−282 V</text>
+      <polyline id="pwmP" fill="none" stroke="#1A2B3B" stroke-width="1.5"/>
+      <polyline id="currP" fill="none" stroke="#C8231E" stroke-width="2.6"/>
+    </svg>
+    <div class="legend">
+      <span><i class="swatch" style="background:#2463A8"></i>sine reference (= V)</span>
+      <span><i class="swatch" style="background:#B9C6D6"></i>carrier</span>
+      <span><i class="swatch" style="background:#1A2B3B"></i>PWM pulses</span>
+      <span><i class="swatch" style="background:#C8231E"></i>motor current</span>
+    </div>
+
+    <div class="srow">
+      <label for="mod">Modulation</label>
+      <input id="mod" type="range" min="0.15" max="1.0" step="0.01" value="0.85" aria-label="Modulation index sets output voltage">
+      <span class="v" id="vMod">0.85</span>
+    </div>
+    <div class="srow">
+      <label for="carrier">Carrier</label>
+      <input id="carrier" type="range" min="6" max="48" step="1" value="21" aria-label="Pulses per cycle sets switching frequency">
+      <span class="v" id="vCar">21/cyc</span>
+    </div>
+    <div class="srow">
+      <label for="ofreq">Output freq</label>
+      <input id="ofreq" type="range" min="5" max="80" step="1" value="50" aria-label="Output frequency">
+      <span class="v" id="vOf">50 Hz</span>
+    </div>
+
+    <div class="readouts">
+      <div class="ro"><div class="lab">Output f</div><div class="val" id="roF">50 Hz</div></div>
+      <div class="ro v"><div class="lab">Output V ≈</div><div class="val" id="roV">340 V</div></div>
+      <div class="ro"><div class="lab">Switching</div><div class="val" id="roK">1.1 kHz</div></div>
+      <div class="ro"><div class="lab">V/f</div><div class="val" id="roVf">6.8</div></div>
+    </div>
+    <div class="status ok" id="status">Balanced switching</div>
+  </div>
+
+  <p class="note"><b>What to watch:</b> the pulses are all the <b>full ±282 V of the bus</b> — the inverter only ever connects the motor to +bus or −bus, nothing in between. The trick is <b>width</b>: fat pulses near the sine's peak, thin ones near the zero-crossings, so the <b>average</b> traces a sine and the motor's inductance smooths it into the crimson current. Raise <b>modulation</b> and the pulses fatten — that's more output voltage (this is the knob behind Module 6's V). Raise the <b>carrier</b> and the current ripple shrinks — smoother and quieter, but every extra switch costs heat in the IGBTs, which is why you can't just crank it (that's the heatsink over-temp trip). Drop the <b>output frequency</b> and, at fixed switching kHz, you get far more pulses per cycle — low speed is where PWM is finest.</p>
+
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 7</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const Vbus=565, half=Vbus/2;
+  // plot x mapping: one displayed cycle across 44..384
+  const X0=44, X1=384;
+  const xf=u=>X0+u*(X1-X0);           // u in 0..1 (one cycle)
+  // sub-plot A vertical: mid 68, amp 44 ; sub-plot B: mid 215, amp 52
+  const yA=v=>68 - v*44;               // v in -1..1
+  const yB=v=>215 - v*52;              // v in -1..1
+
+  const mod=$("mod"), carrier=$("carrier"), ofreq=$("ofreq");
+
+  function tri(u,ppc){ const p=(u*ppc)%1; return 4*Math.abs(p-0.5)-1; }   // -1..1
+
+  function render(){
+    const m=+mod.value, ppc=+carrier.value, f=+ofreq.value;
+
+    // --- sub-plot A: sine ref + carrier over one cycle ---
+    let sP=[], cP=[];
+    const NA=600;
+    for(let i=0;i<=NA;i++){ const u=i/NA;
+      sP.push(xf(u)+","+yA(m*Math.sin(2*Math.PI*u)).toFixed(1));
+      cP.push(xf(u)+","+yA(tri(u,ppc)).toFixed(1));
+    }
+    $("sineP").setAttribute("points",sP.join(" "));
+    $("carrierP").setAttribute("points",cP.join(" "));
+
+    // --- sub-plot B: PWM pulses (one cycle) + current (steady state) ---
+    // PWM over displayed cycle
+    let pP=[]; const NB=1200; let prev=null;
+    for(let i=0;i<=NB;i++){ const u=i/NB;
+      const s=m*Math.sin(2*Math.PI*u), c=tri(u,ppc);
+      const lvl=(s>c)?1:-1;
+      const x=xf(u).toFixed(1), y=yB(lvl).toFixed(1);
+      if(prev!==null && prev!==lvl){ pP.push(x+","+yB(prev).toFixed(1)); } // vertical edge
+      pP.push(x+","+y); prev=lvl;
+    }
+    $("pwmP").setAttribute("points",pP.join(" "));
+
+    // current: one-pole filter of PWM over 3 cycles, display last
+    const NC=1800, du=3/NC, tau=0.05; let iv=0; let cur=[];
+    for(let k=0;k<=NC;k++){ const u=k*du; const uu=u%1;
+      const s=m*Math.sin(2*Math.PI*uu), c=tri(uu,ppc); const lvl=(s>c)?1:-1;
+      iv += (lvl-iv)*(du/tau);
+      if(u>=2){ cur.push(xf(u-2)+","+yB(Math.max(-1,Math.min(1,iv*1.15))).toFixed(1)); }
+    }
+    $("currP").setAttribute("points",cur.join(" "));
+
+    // --- readouts ---
+    const V=Math.round(m*400);
+    const kHz=(ppc*f/1000);
+    $("vMod").textContent=m.toFixed(2); $("vCar").textContent=ppc+"/cyc"; $("vOf").textContent=f+" Hz";
+    $("roF").textContent=f+" Hz"; $("roV").textContent=V+" V";
+    $("roK").textContent=kHz.toFixed(1)+" kHz"; $("roVf").textContent=(V/f).toFixed(1);
+
+    const st=$("status"); st.className="status";
+    if(ppc<=10){ st.classList.add("warn"); st.textContent="Coarse switching — big current ripple, extra heating & audible whine in the motor"; }
+    else if(ppc>=36){ st.classList.add("cool"); st.textContent="Fine, quiet current — but heavy IGBT switching loss; the heatsink runs hot"; }
+    else { st.classList.add("ok"); st.textContent="Balanced — smooth enough current without cooking the IGBTs"; }
+  }
+  [mod,carrier,ofreq].forEach(el=>el.addEventListener("input",render));
+  render();
+})();
+</script>
+</body>
+</html>

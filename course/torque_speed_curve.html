@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torque–Speed Curve — Slip & the Operating Point</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C;
+    --good:#2E7D57;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.4;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{background:var(--card); border:1px solid var(--tint);
+    border-radius:8px; padding:14px; margin-bottom:14px;}
+  svg{display:block; width:100%; height:auto;}
+  .axis{stroke:var(--slate); stroke-width:1;}
+  .grid{stroke:#E3EAF1; stroke-width:1;}
+  .tick{font-size:9px; fill:var(--muted); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .axttl{font-size:9.5px; font-weight:700; letter-spacing:.03em;}
+  .stableband{fill:#2E7D57; opacity:.06;}
+  .controls{display:flex; align-items:center; gap:12px; margin-top:6px;}
+  button{background:var(--steel); color:#fff; border:none; border-radius:6px;
+    font:inherit; font-weight:600; font-size:.82rem; padding:9px 12px; cursor:pointer;}
+  button:hover{background:#1d548f;}
+  button:focus-visible{outline:3px solid var(--copper); outline-offset:2px;}
+  input[type=range]{flex:1; accent-color:var(--crimson); height:26px;}
+  input[type=range]:focus-visible{outline:3px solid var(--copper); outline-offset:3px;}
+  .ld{font-size:.72rem; color:var(--muted); white-space:nowrap;}
+  .readouts{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:12px;}
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:7px 2px; text-align:center;}
+  .ro .lab{font-size:.55rem; letter-spacing:.04em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86rem; font-weight:700; margin-top:2px;}
+  .ro.st .val{font-size:.74rem;}
+  .legend{display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; font-size:.74rem;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:16px; height:3px; border-radius:2px; display:inline-block;}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 12px;}
+  .note b{color:var(--ink);}
+  .running{color:#7BE0AE;} .stalled{color:#FF8C84;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Torque–Speed Curve — the rotor chases, never catches, and the gap is slip</h1>
+    <p>4-pole, 50 Hz · Ns = 1500 rpm · Module 2</p>
+  </header>
+
+  <div class="card">
+    <svg id="plot" viewBox="0 0 400 300" role="img" aria-label="Induction motor torque and current versus speed, with an adjustable load line and operating point">
+      <!-- stable band, grid, axes, curves and markers drawn by JS into these groups -->
+      <g id="gBand"></g>
+      <g id="gGrid"></g>
+      <polyline id="curveT" fill="none" stroke="#2463A8" stroke-width="2.4"/>
+      <polyline id="curveI" fill="none" stroke="#B5651E" stroke-width="2" stroke-dasharray="4 3"/>
+      <g id="gAxes"></g>
+      <line id="loadLine" stroke="#C8231E" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <g id="gMarks"></g>
+      <circle id="op" r="6" fill="#C8231E" stroke="#fff" stroke-width="1.5"/>
+    </svg>
+
+    <div class="legend">
+      <span><i class="swatch" style="background:#2463A8"></i>Motor torque</span>
+      <span><i class="swatch" style="background:#B5651E"></i>Stator current (×FLC)</span>
+      <span><i class="swatch" style="background:#C8231E"></i>Load / operating point</span>
+      <span><i class="swatch" style="background:#2E7D57;opacity:.4"></i>Stable region</span>
+    </div>
+
+    <div class="controls">
+      <span class="ld">Load</span>
+      <input id="load" type="range" min="0" max="3.2" value="1.0" step="0.02" aria-label="Load torque in per-unit of rated">
+      <button id="reset" aria-label="Reset load to rated">Rated</button>
+    </div>
+
+    <div class="readouts">
+      <div class="ro"><div class="lab">Speed</div><div class="val" id="roN">1430</div></div>
+      <div class="ro"><div class="lab">Slip</div><div class="val" id="roS">4.6%</div></div>
+      <div class="ro"><div class="lab">Torque</div><div class="val" id="roT">1.00×</div></div>
+      <div class="ro"><div class="lab">Current</div><div class="val" id="roI">1.1×</div></div>
+      <div class="ro st"><div class="lab">State</div><div class="val running" id="roState">RUNNING</div></div>
+    </div>
+  </div>
+
+  <p class="note"><b>What to watch:</b> in the steep <b>stable region</b> near synchronous speed, huge changes in torque cost only a sliver of speed — that's why a healthy motor holds ~1450 rpm whatever the load. Push the load past the <b>breakdown</b> peak and there's no stable point left: the operating dot falls off the cliff to zero speed. That's a <b>stall</b> — and notice the current pins to its locked-rotor value (~6.5×). Every drive fault family lives on this one curve: <b>overcurrent</b> is the left-hand wall, <b>overload</b> is creeping too far down the stable slope, and the breakdown peak is the ceiling the drive must never ask the motor to cross.</p>
+  <style>
+  .site-footer{background:#1A2B3B;color:#fff;margin:24px -14px 0;padding:13px 20px;
+    border-top:3px solid #B5651E;display:flex;flex-wrap:wrap;justify-content:space-between;
+    align-items:baseline;gap:8px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;}
+  .site-footer .brand{font-weight:700;letter-spacing:.04em;color:#fff;}
+  .site-footer .brand em{font-style:normal;color:#F2C078;}
+  .site-footer .mod{color:#DCE5EE;}
+  </style>
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 2</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  // ---- motor model (Kloss) ----
+  const Ns=1500, sm=0.25, Tmax=2.8;      // synchronous rpm, slip@breakdown, breakdown torque (pu)
+  const Imag=0.35, Ilr=6.5;              // magnetising & locked-rotor current (×FLC)
+  const Tq=s=>{ s=Math.min(1,Math.max(1e-4,s)); return 2*Tmax/(s/sm+sm/s); };
+  const Ic=s=>{ s=Math.min(1,Math.max(0,s));   return Imag+(Ilr-Imag)*Math.pow(s,0.7); };
+  const slipOf=n=>(Ns-n)/Ns;
+  // stable-branch speed that balances a given load torque (null => stalls)
+  function stableSpeed(TL){
+    if(TL<=0) return Ns;
+    if(TL>Tmax) return null;
+    const k=2*Tmax/TL, disc=k*k-4;
+    if(disc<0) return null;
+    const u=(k-Math.sqrt(disc))/2;       // small-slip (stable) root
+    return Ns*(1-sm*u);
+  }
+
+  // ---- plot geometry ----
+  const L=44,R=360,T=16,B=266;           // px bounds of plot area
+  const xN=n=>L+(n/Ns)*(R-L);            // speed -> x
+  const yT=t=>B-(t/3)*(B-T);             // torque(0..3 pu) -> y (left axis)
+  const yI=i=>B-(i/7)*(B-T);             // current(0..7 ×) -> y (right axis)
+
+  // stable band shading (breakdown speed .. Ns)
+  const nBd=Ns*(1-sm);
+  $("gBand").innerHTML=`<rect class="stableband" x="${xN(nBd)}" y="${T}" width="${R-xN(nBd)}" height="${B-T}"/>`;
+
+  // grid + axes + ticks
+  let g="";
+  [0,1,2,3].forEach(t=>{ g+=`<line class="grid" x1="${L}" y1="${yT(t)}" x2="${R}" y2="${yT(t)}"/>`; });
+  $("gGrid").innerHTML=g;
+  let ax=`<line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${B}"/>
+          <line class="axis" x1="${R}" y1="${T}" x2="${R}" y2="${B}"/>
+          <line class="axis" x1="${L}" y1="${B}" x2="${R}" y2="${B}"/>`;
+  [0,1,2,3].forEach(t=>{ ax+=`<text class="tick" x="${L-6}" y="${yT(t)+3}" text-anchor="end">${t}</text>`; });
+  [0,2,4,6].forEach(i=>{ ax+=`<text class="tick" x="${R+5}" y="${yI(i)+3}" text-anchor="start">${i}</text>`; });
+  [0,375,750,1125,1500].forEach(n=>{ ax+=`<text class="tick" x="${xN(n)}" y="${B+13}" text-anchor="middle">${n}</text>`; });
+  ax+=`<text class="axttl" x="${L-30}" y="${T+4}" fill="#2463A8">Torque</text>`;
+  ax+=`<text class="axttl" x="${R+2}" y="${T+4}" fill="#B5651E">×FLC</text>`;
+  ax+=`<text class="axttl" x="${(L+R)/2}" y="${B+27}" text-anchor="middle" fill="#3C556B">Speed (rpm) →  Ns=1500</text>`;
+  $("gAxes").innerHTML=ax;
+
+  // torque & current polylines
+  let pT=[],pI=[];
+  for(let n=0;n<=Ns;n+=6){ const s=slipOf(n); pT.push(xN(n)+","+yT(Tq(s))); pI.push(xN(n)+","+yI(Ic(s))); }
+  $("curveT").setAttribute("points",pT.join(" "));
+  $("curveI").setAttribute("points",pI.join(" "));
+
+  // fixed markers: locked rotor, breakdown, rated
+  const nRated=stableSpeed(1.0);
+  let m="";
+  m+=`<circle cx="${xN(0)}" cy="${yT(Tq(1))}" r="3.5" fill="#3C556B"/>
+      <text class="tick" x="${xN(0)+6}" y="${yT(Tq(1))-4}" fill="#3C556B">locked rotor</text>`;
+  m+=`<circle cx="${xN(nBd)}" cy="${yT(Tmax)}" r="4" fill="#2463A8"/>
+      <text class="tick" x="${xN(nBd)}" y="${yT(Tmax)-6}" text-anchor="middle" fill="#2463A8">breakdown ${Tmax}×</text>`;
+  m+=`<circle cx="${xN(nRated)}" cy="${yT(1.0)}" r="3" fill="#1A2B3B"/>
+      <text class="tick" x="${xN(nRated)-4}" y="${yT(1.0)+12}" text-anchor="end" fill="#1A2B3B">rated</text>`;
+  $("gMarks").innerHTML=m;
+
+  // ---- interaction / settling ----
+  const loadEl=$("load");
+  let TL=1.0, nOp=nRated;                 // operating speed (animated)
+  function frame(){
+    const target = stableSpeed(TL);
+    const goal = (target===null)?0:target;
+    nOp += (goal-nOp)*0.09;               // first-order settle (stands in for inertia)
+    if(Math.abs(goal-nOp)<0.4) nOp=goal;
+
+    const s=slipOf(nOp), Tmot=Tq(s), I=Ic(s);
+    // load line
+    $("loadLine").setAttribute("x1",L); $("loadLine").setAttribute("x2",R);
+    $("loadLine").setAttribute("y1",yT(Math.min(TL,3))); $("loadLine").setAttribute("y2",yT(Math.min(TL,3)));
+    // operating dot rides ON the torque curve at current speed
+    $("op").setAttribute("cx",xN(nOp)); $("op").setAttribute("cy",yT(Tmot));
+
+    const stalled = (target===null) && nOp<20;
+    $("roN").textContent=Math.round(nOp);
+    $("roS").textContent=(s*100).toFixed(1)+"%";
+    $("roT").textContent=Tmot.toFixed(2)+"×";
+    $("roI").textContent=I.toFixed(1)+"×";
+    const st=$("roState");
+    st.textContent = stalled?"STALLED":"RUNNING";
+    st.className = "val "+(stalled?"stalled":"running");
+
+    requestAnimationFrame(frame);
+  }
+  loadEl.addEventListener("input",()=>{ TL=+loadEl.value; });
+  $("reset").addEventListener("click",()=>{ loadEl.value="1.0"; TL=1.0; });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

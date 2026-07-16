@@ -111,6 +111,8 @@
   }
   .nav-item.soon { color: #5a6270; cursor: default; }
   .nav-item.soon:hover { background: none; color: #5a6270; }
+  .nav-external { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); text-decoration: none; }
+  .nav-external .ext-icon { color: var(--amber); flex-shrink: 0; }
   .tag {
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: #6b7280;
     border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
@@ -466,6 +468,14 @@
   .dol-legend { display: flex; gap: 22px; padding: 12px 20px; border-top: 1px solid var(--line); background: #181c22; font-family: var(--mono); font-size: 11px; color: var(--muted); flex-wrap: wrap; }
   .dol-legend b { color: var(--amber); font-weight: 500; }
   .dol-tbox { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+
+  /* ---------------- PCB TRACE AMPACITY TOOL ---------------- */
+  .pcb-svg { width: 100%; height: auto; max-height: 210px; display: block; }
+  .pcb-substrate { fill: #1d3a2a; stroke: #2e5a40; stroke-width: 1.5; }
+  .pcb-copper { fill: var(--amber); stroke: #c77f10; stroke-width: 1; }
+  .pcb-dim { stroke: var(--cyan); stroke-width: 1.1; }
+  .pcb-dim-label { font-family: var(--mono); font-size: 10.5px; fill: var(--cyan); }
+  .pcb-lbl { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
 
   :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
 
@@ -5095,9 +5105,234 @@
   };
 
   /* ============================================================
+     TOOL 26 — PCB TRACE AMPACITY
+     ============================================================ */
+  const PCBTraceAmpacity = {
+    id: "pcbtrace",
+    discipline: "POWER DISTRIBUTION",
+    title: "PCB trace ampacity calculator",
+    subtitle: "Enter any two of trace width, current, and temperature rise — the third solves via the IPC-2221 formula. Add a trace length for resistance, voltage drop, and power loss.",
+
+    mount(root) {
+      const COPPER = [
+        { name: "17 µm (0.5 oz)", um: 17.5 }, { name: "35 µm (1 oz)", um: 35 },
+        { name: "70 µm (2 oz)", um: 70 }, { name: "105 µm (3 oz)", um: 105 },
+        { name: "Custom", um: null },
+      ];
+      const st = { layer: "external" };
+      const raw = { w: "20", I: "", dT: "10", t: "35", len: "50" };
+      const chans = {};
+      let inputOrder = ["w", "dT"];
+
+      root.innerHTML = "";
+      const panel = el("div", "panel");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>TRACE AMPACITY</h2>
+          <div class="legend"><span><i class="dot set"></i> SET</span><span><i class="dot meas"></i> MEASURED</span></div>
+        </div>
+        <div class="selectors">
+          <div class="seg-field"><span class="seg-label">LAYER</span>
+            <div class="seg" data-group="layer"><button data-v="external" class="on">External</button><button data-v="internal">Internal</button></div>
+          </div>
+          <div class="seg-field"><span class="seg-label">COPPER WEIGHT</span><select class="mat-select"></select></div>
+        </div>
+        <div class="gear-layout">
+          <div class="gear-stage"><div class="pcb-viz"></div></div>
+          <div class="channels cols-2 pcb-inputs"></div>
+        </div>
+        <div class="outputs-wrap"><div class="channels cols-3 pcb-outputs"></div></div>
+        <div class="status"><div class="status-msg"></div><button class="btn-reset">CLEAR</button></div>`;
+      root.appendChild(panel);
+      root.appendChild(el("p", "note", `<span class="k">i</span><span>IPC-2221 formula: I = k·ΔT<sup>0.44</sup>·A<sup>0.725</sup>, with k = 0.048 for external layers and 0.024 for internal layers (internal traces run hotter for the same current since the board insulates them, so they need more copper). This is the classic empirical model — IPC-2152 accounts for board thickness, trace spacing, and airflow more precisely and will generally allow more current. Resistance uses copper resistivity at 20°C and doesn't account for the temperature rise itself.</span>`));
+
+      const vizEl = panel.querySelector(".pcb-viz");
+      const inputsEl = panel.querySelector(".pcb-inputs");
+      const outsEl = panel.querySelector(".pcb-outputs");
+      const statusEl = panel.querySelector(".status-msg");
+      const copperSel = panel.querySelector(".mat-select");
+
+      COPPER.forEach((c, i) => { const o = el("option"); o.value = i; o.textContent = c.name; copperSel.appendChild(o); });
+      copperSel.value = "1";
+      copperSel.addEventListener("change", () => {
+        const c = COPPER[+copperSel.value];
+        if (c.um != null) { raw.t = String(c.um); if (chans.t) chInput(chans.t, raw.t); }
+        recompute();
+      });
+
+      const solveDefs = [
+        { key: "w", sym: "w", name: "Trace width", unit: "mils" },
+        { key: "I", sym: "I", name: "Current", unit: "A" },
+        { key: "dT", sym: "ΔT", name: "Temperature rise", unit: "°C" },
+      ];
+      const fixedDefs = [
+        { key: "t", sym: "t", name: "Copper thickness", unit: "µm" },
+        { key: "len", sym: "L", name: "Trace length", unit: "mm" },
+      ];
+      solveDefs.forEach(d => {
+        const c = makeChannel(d); chans[d.key] = c; inputsEl.appendChild(c.el);
+        c.input.addEventListener("input", e => onType(d.key, e.target.value));
+        c.value.addEventListener("click", () => takeOver(d.key));
+      });
+      fixedDefs.forEach(d => {
+        const c = makeChannel(d); chans[d.key] = c; inputsEl.appendChild(c.el);
+        chInput(c, raw[d.key]);
+        c.input.addEventListener("input", e => { raw[d.key] = e.target.value; recompute(); });
+      });
+
+      const outDefs = [
+        { key: "R", sym: "R", name: "Trace resistance", unit: "Ω" },
+        { key: "Vd", sym: "ΔV", name: "Voltage drop", unit: "V" },
+        { key: "Pl", sym: "P", name: "Power loss", unit: "W" },
+      ];
+      outDefs.forEach(d => { const c = makeChannel(d); chans[d.key] = c; outsEl.appendChild(c.el); chPending(c); });
+
+      panel.querySelectorAll(".seg button").forEach(btn => btn.addEventListener("click", () => {
+        st.layer = btn.dataset.v;
+        panel.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b === btn));
+        recompute();
+      }));
+
+      function onType(key, val) {
+        raw[key] = val;
+        if (val.trim() === "") inputOrder = inputOrder.filter(k => k !== key);
+        else if (!inputOrder.includes(key)) { inputOrder.push(key); if (inputOrder.length > 2) raw[inputOrder.shift()] = ""; }
+        recompute();
+      }
+      function takeOver(key) {
+        if (!inputOrder.includes(key)) { inputOrder.push(key); if (inputOrder.length > 2) raw[inputOrder.shift()] = ""; }
+        chInput(chans[key], raw[key] || "");
+        chans[key].input.focus(); chans[key].input.select();
+        recompute();
+      }
+      const num = k => { const v = parseFloat(raw[k]); return Number.isNaN(v) ? undefined : v; };
+      const bad = t => { const e = new Error(t); e.friendly = true; return e; };
+
+      function solve(a, b, t) {
+        const k = st.layer === "external" ? 0.048 : 0.024, expB = 0.44, expC = 0.725;
+        const w = num("w"), I = num("I"), dT = num("dT");
+        const known = { w, I, dT };
+        let out = {};
+        const pair = [a, b].sort().join("");
+        switch (pair) {
+          case "dTw": {
+            const A = w * t;
+            out.I = k * Math.pow(dT, expB) * Math.pow(A, expC);
+            break;
+          }
+          case "Iw": {
+            if (I <= 0) throw bad("Current must be greater than 0.");
+            const A = w * t;
+            out.dT = Math.pow(I / (k * Math.pow(A, expC)), 1 / expB);
+            break;
+          }
+          case "IdT": {
+            if (dT <= 0) throw bad("Temperature rise must be greater than 0.");
+            const Areq = Math.pow(I / (k * Math.pow(dT, expB)), 1 / expC);
+            out.w = Areq / t;
+            break;
+          }
+        }
+        for (const key in out) if (!isFinite(out[key]) || out[key] < 0) throw bad("That combination doesn't resolve to a real value.");
+        return { ...known, ...out };
+      }
+
+      function recompute() {
+        const tUm = num("t"), t = tUm != null ? tUm / 25.4 : undefined, len = num("len");
+        if (!(t > 0)) {
+          solveDefs.forEach(d => chEmpty(chans[d.key]));
+          outDefs.forEach(d => chPending(chans[d.key]));
+          statusEl.className = "status-msg";
+          statusEl.textContent = "Set a copper thickness (or pick a weight) to solve.";
+          drawTrace(null);
+          return;
+        }
+        if (inputOrder.length < 2) {
+          solveDefs.forEach(d => inputOrder.includes(d.key) ? chInput(chans[d.key], raw[d.key]) : chEmpty(chans[d.key]));
+          outDefs.forEach(d => chPending(chans[d.key]));
+          statusEl.className = "status-msg";
+          statusEl.textContent = inputOrder.length === 1 ? "One more value and it solves." : "Enter two of width, current, and temperature rise.";
+          drawTrace(null);
+          return;
+        }
+        const [a, b] = inputOrder;
+        let result;
+        try { result = solve(a, b, t); }
+        catch (err) {
+          statusEl.className = "status-msg error"; statusEl.textContent = err.friendly ? err.message : "Check your inputs.";
+          drawTrace(null);
+          return;
+        }
+        solveDefs.forEach(d => {
+          if (inputOrder.includes(d.key)) chInput(chans[d.key], raw[d.key]);
+          else { chMeasured(chans[d.key], d.key === "w" ? `${fmt(result[d.key])}` : formatSI(result[d.key], d.unit)); raw[d.key] = trimNumber(result[d.key]); }
+        });
+
+        const w = result.w, I = result.I;
+        if (len > 0) {
+          const width_m = w * 0.0254e-3, thick_m = t * 0.0254e-3, area_m2 = width_m * thick_m, length_m = len / 1000;
+          const R = 1.68e-8 * length_m / area_m2;
+          const Vd = I * R, Pl = I * I * R;
+          chMeasured(chans.R, formatSI(R, "Ω"));
+          chMeasured(chans.Vd, formatSI(Vd, "V"));
+          chMeasured(chans.Pl, formatSI(Pl, "W"));
+          statusEl.className = "status-msg";
+          statusEl.textContent = `w = ${fmt(w)} mils · I = ${formatSI(I, "A")} · ΔT = ${fmt(result.dT)}°C · R = ${formatSI(R, "Ω")}`;
+        } else {
+          [chans.R, chans.Vd, chans.Pl].forEach(chPending);
+          statusEl.className = "status-msg";
+          statusEl.textContent = `w = ${fmt(w)} mils · I = ${formatSI(I, "A")} · ΔT = ${fmt(result.dT)}°C. Add a trace length for resistance and loss.`;
+        }
+
+        drawTrace({ w, t });
+      }
+
+      function drawTrace(vals) {
+        const W = 280, H = 200, bx0 = 40, bx1 = 240, by0 = 80, by1 = 150;
+        const external = st.layer === "external";
+        let s = `<rect class="pcb-substrate" x="${bx0}" y="${by0}" width="${bx1 - bx0}" height="${by1 - by0}" rx="4"/>`;
+        if (!vals) {
+          s += `<text class="pcb-lbl" x="${(bx0 + bx1) / 2}" y="${(by0 + by1) / 2 + 4}" text-anchor="middle">no trace set</text>`;
+          vizEl.innerHTML = `<svg class="pcb-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="PCB cross-section, no trace set">${s}</svg>`;
+          return;
+        }
+        const wPx = Math.min(140, Math.max(40, vals.w * 2.2));
+        const tPx = Math.min(16, Math.max(5, vals.t * 3.5));
+        const cx0 = (bx0 + bx1) / 2 - wPx / 2, cx1 = cx0 + wPx;
+        const cy1 = external ? by0 : (by0 + by1) / 2 + tPx / 2;
+        const cy0 = cy1 - tPx;
+        s += `<rect class="pcb-copper" x="${cx0.toFixed(1)}" y="${cy0.toFixed(1)}" width="${wPx.toFixed(1)}" height="${tPx.toFixed(1)}"/>`;
+        // width dimension
+        const dimY = by1 + 20;
+        s += `<line class="pcb-dim" x1="${cx0.toFixed(1)}" y1="${dimY}" x2="${cx1.toFixed(1)}" y2="${dimY}"/>`;
+        s += `<line class="pcb-dim" x1="${cx0.toFixed(1)}" y1="${dimY - 5}" x2="${cx0.toFixed(1)}" y2="${dimY + 5}"/>`;
+        s += `<line class="pcb-dim" x1="${cx1.toFixed(1)}" y1="${dimY - 5}" x2="${cx1.toFixed(1)}" y2="${dimY + 5}"/>`;
+        s += `<text class="pcb-dim-label" x="${(cx0 + cx1) / 2}" y="${dimY + 16}" text-anchor="middle">w · ${fmt(vals.w)} mils</text>`;
+        // thickness dimension
+        const dimX = cx1 + 16;
+        s += `<line class="pcb-dim" x1="${dimX}" y1="${cy0.toFixed(1)}" x2="${dimX}" y2="${cy1.toFixed(1)}"/>`;
+        s += `<text class="pcb-dim-label" x="${dimX + 6}" y="${((cy0 + cy1) / 2 + 3).toFixed(1)}" text-anchor="start">t</text>`;
+        s += `<text class="pcb-lbl" x="${(bx0 + bx1) / 2}" y="${by0 - 10}" text-anchor="middle">${external ? "EXTERNAL LAYER" : "INTERNAL LAYER"}</text>`;
+        vizEl.innerHTML = `<svg class="pcb-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="PCB cross-section, ${external ? "external" : "internal"} copper trace, width ${fmt(vals.w)} mils">${s}</svg>`;
+      }
+
+      panel.querySelector(".btn-reset").addEventListener("click", () => {
+        inputOrder = []; solveDefs.forEach(d => { raw[d.key] = ""; chEmpty(chans[d.key]); });
+        raw.len = "";
+        chInput(chans.len, "");
+        statusEl.className = "status-msg";
+        recompute();
+        chans.w.input.focus();
+      });
+
+      recompute();
+    },
+  };
+
+  /* ============================================================
      ROUTER + SIDEBAR
      ============================================================ */
-  const MODULES = { ohms: OhmsLaw, gear: GearRatio, beam: BeamDeflection, chain: ChainPitch, vdiv: VoltageDivider, rcode: ResistorCodes, reynolds: ReynoldsNumber, vdrop: VoltageDrop, filter: RCFilter, timer555: Timer555, opamp: OpAmpGain, units: UnitConverter, dimensional: DimensionalAnalysis, mtorque: MotorTorque, mfla: MotorFLA, vfdcable: VFDCable, acpower: ACPowerTriangle, acimpedance: ACImpedance, pfc: PowerFactorCorrection, blownfilm: BlownFilmProcess, bubblestress: BubbleStress, dolstarter: DOLStarter, fwdrev: FwdRevStarter, stardelta: StarDeltaStarter, rlc: SeriesParallelRLC };
+  const MODULES = { ohms: OhmsLaw, gear: GearRatio, beam: BeamDeflection, chain: ChainPitch, vdiv: VoltageDivider, rcode: ResistorCodes, reynolds: ReynoldsNumber, vdrop: VoltageDrop, filter: RCFilter, timer555: Timer555, opamp: OpAmpGain, units: UnitConverter, dimensional: DimensionalAnalysis, mtorque: MotorTorque, mfla: MotorFLA, vfdcable: VFDCable, acpower: ACPowerTriangle, acimpedance: ACImpedance, pfc: PowerFactorCorrection, blownfilm: BlownFilmProcess, bubblestress: BubbleStress, dolstarter: DOLStarter, fwdrev: FwdRevStarter, stardelta: StarDeltaStarter, rlc: SeriesParallelRLC, pcbtrace: PCBTraceAmpacity };
   const DISCIPLINES = [
     { name: "ELECTRICAL", tools: [
       { id: "ohms", name: "Ohm's Law", status: "active" },
@@ -5138,6 +5373,9 @@
       { id: "blownfilm", name: "Blown Film Process", status: "active" },
       { id: "bubblestress", name: "Bubble Stress", status: "active" },
     ]},
+    { name: "POWER DISTRIBUTION", tools: [
+      { id: "pcbtrace", name: "PCB Trace Ampacity", status: "active" },
+    ]},
   ];
 
   const navEl = document.getElementById("nav");
@@ -5169,6 +5407,12 @@
     g.appendChild(items);
     navEl.appendChild(g);
   });
+
+  const courseLink = el("a", "nav-item nav-external", `3-Phase Drives Course <span class="ext-icon">↗</span>`);
+  courseLink.href = "course/index.html";
+  courseLink.target = "_blank";
+  courseLink.rel = "noopener";
+  navEl.appendChild(courseLink);
 
   function setExpandedGroup(name) {
     Object.entries(navGroups).forEach(([gname, g]) => {

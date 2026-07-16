@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflected Wave — voltage doubling at the motor</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --gold:#F2C078; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C; --good:#2E7D57;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.45;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{background:var(--card); border:1px solid var(--tint); border-radius:8px; padding:14px; margin-bottom:14px;}
+  .card h2{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--slate); margin:0 0 8px;}
+  svg{display:block; width:100%; height:auto;}
+  .axis{stroke:var(--slate); stroke-width:1;} .grid{stroke:#E3EAF1; stroke-width:1;}
+  .tick{font-size:9px; fill:var(--muted); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .srow{display:grid; grid-template-columns:92px 1fr 60px; align-items:center; gap:10px; margin-top:10px;}
+  .srow label{font-size:.8rem; font-weight:600;} .srow .v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.8rem; text-align:right;}
+  #len{accent-color:var(--steel);} #rise{accent-color:var(--copper);}
+  input[type=range]{width:100%; height:26px;} input[type=range]:focus-visible{outline:3px solid var(--copper); outline-offset:3px;}
+  .seg{display:inline-flex; border:1px solid var(--tint); border-radius:7px; overflow:hidden; width:100%; margin-top:10px;}
+  .seg button{flex:1; background:#fff; color:var(--navy); border:none; font:inherit; font-weight:600; font-size:.78rem; padding:9px 4px; cursor:pointer;}
+  .seg button+button{border-left:1px solid var(--tint);}
+  .seg button.on{background:var(--steel); color:#fff;}
+  .seg button:focus-visible{outline:3px solid var(--copper); outline-offset:-3px;}
+  .readouts{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px;}
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:8px 3px; text-align:center;}
+  .ro .lab{font-size:.55rem; letter-spacing:.04em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.95rem; font-weight:700; margin-top:2px;}
+  .ro.pk .val{color:#F2C078;}
+  .status{margin-top:12px; border-radius:7px; padding:9px 12px; color:#fff; font-size:.8rem; font-weight:600;}
+  .status.ok{background:var(--good);} .status.warn{background:var(--copper);} .status.bad{background:var(--crimson);} .status.cool{background:var(--steel);}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 12px;} .note b{color:var(--ink);}
+  .site-footer{background:var(--navy); color:#fff; margin:24px -14px 0; padding:13px 20px;
+    border-top:3px solid var(--copper); display:flex; flex-wrap:wrap; justify-content:space-between;
+    align-items:baseline; gap:8px 14px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;}
+  .site-footer .brand{font-weight:700; letter-spacing:.04em;} .site-footer .brand em{font-style:normal; color:var(--gold);}
+  .site-footer .mod{color:var(--tint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Reflected Wave — why a fast edge doubles at the motor</h1>
+    <p>Motor cable as a transmission line · Module 10</p>
+  </header>
+
+  <!-- TRAVELLING WAVE -->
+  <div class="card">
+    <h2>The edge travels, hits the motor, and bounces back</h2>
+    <svg viewBox="0 0 400 190" role="img" aria-label="Voltage travelling down the motor cable and reflecting at the motor end">
+      <!-- inverter + motor icons -->
+      <rect x="16" y="92" width="30" height="40" rx="4" fill="#F7FAFD" stroke="#3C556B" stroke-width="1.4"/>
+      <text class="tick" x="31" y="146" text-anchor="middle" fill="#3C556B">drive</text>
+      <circle cx="372" cy="112" r="16" fill="#F7FAFD" stroke="#3C556B" stroke-width="1.4"/>
+      <text x="372" y="116" text-anchor="middle" font-size="11" font-weight="700" fill="#1A2B3B">M</text>
+      <text class="tick" x="372" y="146" text-anchor="middle" fill="#3C556B">motor</text>
+      <!-- cable baseline -->
+      <line x1="50" y1="150" x2="350" y2="150" stroke="#DCE5EE" stroke-width="2"/>
+      <!-- voltage profile -->
+      <polygon id="wave" fill="#2463A8" fill-opacity="0.18" stroke="#2463A8" stroke-width="2"/>
+      <!-- 1x and 2x guide lines -->
+      <line x1="50" y1="92" x2="350" y2="92" stroke="#B9C6D6" stroke-width="1" stroke-dasharray="3 3"/>
+      <text class="tick" x="52" y="89" fill="#9FB2C4">1× bus</text>
+      <line x1="50" y1="36" x2="350" y2="36" stroke="#C8231E" stroke-width="1" stroke-dasharray="3 3"/>
+      <text class="tick" x="52" y="33" fill="#C8231E">2× bus</text>
+      <!-- terminal marker -->
+      <line id="term" x1="350" y1="150" x2="350" y2="150" stroke="#C8231E" stroke-width="3"/>
+    </svg>
+    <p class="note" style="margin:2px 2px 0">The motor end is nearly an open circuit to a fast edge, so the wave reflects and <b>adds to itself</b> — the terminal can swing toward twice the bus voltage before the reflection races back and rings it down.</p>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="card">
+    <h2>Your installation</h2>
+    <div class="srow">
+      <label for="len">Cable length</label>
+      <input id="len" type="range" min="1" max="120" step="1" value="40" aria-label="Motor cable length in metres">
+      <span class="v" id="vLen">40 m</span>
+    </div>
+    <div class="srow">
+      <label for="rise">IGBT edge</label>
+      <input id="rise" type="range" min="50" max="600" step="10" value="100" aria-label="IGBT rise time in nanoseconds">
+      <span class="v" id="vRise">100 ns</span>
+    </div>
+    <span class="seg" id="segF">
+      <button data-f="none" class="on">No filter</button>
+      <button data-f="dvdt">dV/dt filter</button>
+      <button data-f="sine">Sine filter</button>
+    </span>
+    <div class="readouts">
+      <div class="ro pk"><div class="lab">Peak at motor</div><div class="val" id="roPk">1050 V</div></div>
+      <div class="ro"><div class="lab">Overshoot</div><div class="val" id="roOS">1.9×</div></div>
+      <div class="ro"><div class="lab">Critical len</div><div class="val" id="roLc">7 m</div></div>
+    </div>
+  </div>
+
+  <!-- TERMINAL WAVEFORM -->
+  <div class="card">
+    <h2>What the first winding turn sees</h2>
+    <svg id="wf" viewBox="0 0 400 200" role="img" aria-label="Terminal voltage versus time showing overshoot against insulation limits">
+      <g id="wfGrid"></g>
+      <polyline id="wfLine" fill="none" stroke="#C8231E" stroke-width="2.6"/>
+      <g id="wfAxes"></g>
+    </svg>
+    <div class="status ok" id="status">Within a standard motor's insulation.</div>
+  </div>
+
+  <p class="note"><b>Run the experiment:</b> start with a <b>fast 100 ns IGBT</b> and drag <b style="color:#2463A8">cable length</b> up. Below the critical length the terminal barely overshoots; past it the peak climbs to nearly <b>2× the bus</b> — around 1050 V — and every one of those spikes hammers the first turn of the winding. That's why <b>inverter-duty</b> motors (reinforced insulation, ~1600 V rated) exist, and why a standard motor on a long run fails early. Now the counterintuitive part: make the IGBT <b>faster</b> (lower ns) and it gets <b>worse</b> — better switches, harsher on the motor. The fixes: a <b>dV/dt filter</b> slows the edge so the overshoot shrinks, and a <b>sine filter</b> removes the PWM entirely — a real sinewave, any cable length, standard motor, silent.</p>
+
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 10</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const v=150, Vbus=565, Gm=0.9, Gd=-0.9;    // m/µs, V, reflection coeffs
+  const STD=1000, INV=1600;                    // insulation limits (V peak)
+  let L=40, trns=100, filter="none";
+
+  function trEff(){ if(filter==="dvdt") return Math.max(trns*8,800); return trns; }
+  function overshoot(){
+    if(filter==="sine") return 1.0;
+    const tr=trEff()/1000, tau=L/v;            // µs
+    const fullness=Math.min(1, (2*tau)/tr);
+    return 1 + Gm*fullness;
+  }
+
+  // ---- terminal waveform graph ----
+  const L0=44,R0=384,T0=14,B0=170;
+  const yV=V=>B0-(V/1200)*(B0-T0);
+  function drawWfFrame(){
+    let g=""; [0,300,600,900,1200].forEach(V=>{ g+=`<line class="grid" x1="${L0}" y1="${yV(V)}" x2="${R0}" y2="${yV(V)}"/>`; });
+    $("wfGrid").innerHTML=g;
+    let a=`<line class="axis" x1="${L0}" y1="${T0}" x2="${L0}" y2="${B0}"/><line class="axis" x1="${L0}" y1="${B0}" x2="${R0}" y2="${B0}"/>`;
+    [0,600,1200].forEach(V=>{ a+=`<text class="tick" x="${L0-5}" y="${yV(V)+3}" text-anchor="end">${V}</text>`; });
+    a+=`<line x1="${L0}" y1="${yV(Vbus)}" x2="${R0}" y2="${yV(Vbus)}" stroke="#B9C6D6" stroke-width="1" stroke-dasharray="3 3"/><text class="tick" x="${R0-2}" y="${yV(Vbus)-3}" text-anchor="end" fill="#9FB2C4">bus 565</text>`;
+    a+=`<line x1="${L0}" y1="${yV(STD)}" x2="${R0}" y2="${yV(STD)}" stroke="#C8231E" stroke-width="1.2" stroke-dasharray="4 3"/><text class="tick" x="${R0-2}" y="${yV(STD)-3}" text-anchor="end" fill="#C8231E">standard motor 1000</text>`;
+    a+=`<text class="tick" x="${(L0+R0)/2}" y="${B0+14}" text-anchor="middle" fill="#3C556B">time (µs)</text>`;
+    $("wfAxes").innerHTML=a;
+  }
+
+  function render(){
+    L=+$("len").value; trns=+$("rise").value;
+    const OS=overshoot(), peak=OS*Vbus, tau=L/v, tr=trEff()/1000, Lc=v*tr/2;
+
+    // readouts
+    $("vLen").textContent=L+" m"; $("vRise").textContent=trns+" ns";
+    $("roPk").textContent=Math.round(peak)+" V"; $("roOS").textContent=OS.toFixed(2)+"×";
+    $("roLc").textContent=(filter==="sine")?"n/a":Math.round(Lc)+" m";
+    document.querySelectorAll("#segF button").forEach(b=>b.classList.toggle("on",b.dataset.f===filter));
+
+    // terminal waveform over time
+    const Tw=Math.max(1.5, 9*tau);
+    let p=[]; const N=400;
+    for(let i=0;i<=N;i++){ const t=i/N*Tw; let val;
+      if(filter==="sine"){ val=Vbus*(t<0.8? (t/0.8):1); }        // clean rise, no overshoot
+      else if(t<tr){ val=peak*(t/tr); }
+      else { const dd=Math.exp(-(t-tr)/(2.2*tau)); val=Vbus+(peak-Vbus)*dd*Math.cos(2*Math.PI*(t-tr)/(4*tau)); }
+      const x=L0+(t/Tw)*(R0-L0);
+      p.push(x.toFixed(1)+","+yV(Math.max(0,val)).toFixed(1));
+    }
+    $("wfLine").setAttribute("points",p.join(" "));
+
+    // status
+    const st=$("status"); st.className="status";
+    if(filter==="sine"){ st.classList.add("cool"); st.textContent="Sine filter — the motor sees a clean sinewave. Any cable length, standard motor, silent."; }
+    else if(peak<=STD){ st.classList.add("ok"); st.textContent="Peak "+Math.round(peak)+" V — within a standard motor's insulation. Fine as-is."; }
+    else if(peak<=INV){ st.classList.add("warn"); st.textContent="Peak "+Math.round(peak)+" V — over standard, under inverter-duty (1600 V). Use an inverter-rated motor or a dV/dt filter."; }
+    else { st.classList.add("bad"); st.textContent="Peak "+Math.round(peak)+" V — beyond inverter-duty too. Fit a dV/dt or sine filter."; }
+  }
+
+  // ---- travelling-wave animation ----
+  function S(a,trµs){ if(a<0) return 0; if(a<trµs) return a/trµs; return 1; }
+  function Vpu(pp,t,tau,trµs,gm){
+    return S(t-pp*tau,trµs) + gm*S(t-(2-pp)*tau,trµs) + gm*Gd*S(t-(2+pp)*tau,trµs)
+         + gm*gm*Gd*S(t-(4-pp)*tau,trµs) + gm*gm*Gd*Gd*S(t-(4+pp)*tau,trµs);
+  }
+  let at=0, last=null;
+  function anim(ts){
+    if(last==null) last=ts; const dtr=(ts-last)/1000; last=ts;
+    const tau=L/v, trµs=trEff()/1000, gm=(filter==="sine")?0:Gm;
+    const span=6*tau+trµs; at+=dtr*span/3.0; if(at>span) at=0;      // ~3s loop
+    let pts="";
+    for(let i=0;i<=120;i++){ const pp=i/120;
+      const val=Math.max(0,Math.min(2,Vpu(pp,at,tau,trµs,gm)));
+      const x=50+pp*300, y=150-val*57;
+      pts+=x.toFixed(1)+","+y.toFixed(1)+" ";
+    }
+    pts+="350,150 50,150";
+    $("wave").setAttribute("points",pts);
+    const tv=Math.max(0,Math.min(2,Vpu(1,at,tau,trµs,gm)));
+    $("term").setAttribute("y2",(150-tv*57).toFixed(1));
+    requestAnimationFrame(anim);
+  }
+
+  $("len").addEventListener("input",render);
+  $("rise").addEventListener("input",render);
+  $("segF").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; filter=b.dataset.f; render(); });
+  drawWfFrame(); render(); requestAnimationFrame(anim);
+})();
+</script>
+</body>
+</html>

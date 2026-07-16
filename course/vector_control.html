@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector Control — flux current vs torque current</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --gold:#F2C078; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C; --good:#2E7D57;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.45;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{background:var(--card); border:1px solid var(--tint); border-radius:8px; padding:14px; margin-bottom:14px;}
+  .card h2{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--slate); margin:0 0 4px;}
+  .card .h3{font-size:.72rem; color:var(--muted); margin:0 0 8px;}
+  svg{display:block; width:100%; height:auto;}
+  .srow{display:grid; grid-template-columns:110px 1fr 54px; align-items:center; gap:10px; margin-top:10px;}
+  .srow label{font-size:.8rem; font-weight:600;}
+  .srow label .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle;}
+  .srow .v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.8rem; text-align:right; color:var(--navy);}
+  #iq{accent-color:var(--crimson);} #idc{accent-color:var(--copper);}
+  input[type=range]{width:100%; height:26px;}
+  input[type=range]:focus-visible{outline:3px solid var(--copper); outline-offset:3px;}
+  .readouts{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:14px;}
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:7px 2px; text-align:center;}
+  .ro .lab{font-size:.53rem; letter-spacing:.03em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86rem; font-weight:700; margin-top:2px;}
+  .ro.tq .val{color:var(--gold);}
+  .status{margin-top:12px; border-radius:7px; padding:9px 12px; color:#fff; font-size:.8rem; font-weight:600;}
+  .status.ok{background:var(--good);} .status.warn{background:var(--copper);}
+  .legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:9px; font-size:.72rem;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:15px; height:3px; border-radius:2px; display:inline-block;}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 12px;} .note b{color:var(--ink);}
+  .site-footer{background:var(--navy); color:#fff; margin:24px -14px 0; padding:13px 20px;
+    border-top:3px solid var(--copper); display:flex; flex-wrap:wrap; justify-content:space-between;
+    align-items:baseline; gap:8px 14px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;}
+  .site-footer .brand{font-weight:700; letter-spacing:.04em;} .site-footer .brand em{font-style:normal; color:var(--gold);}
+  .site-footer .mod{color:var(--tint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Vector Control — split the current into flux and torque</h1>
+    <p>The controller's dq view · Module 8</p>
+  </header>
+
+  <!-- dq FRAME (calm DC view) -->
+  <div class="card">
+    <h2>The rotating flux frame — the controller's world</h2>
+    <p class="h3">Locked to the rotor flux, so it's all steady DC — just like a DC motor</p>
+    <svg viewBox="0 0 300 250" role="img" aria-label="Stator current resolved into a flux component along d and a torque component along q">
+      <!-- axes -->
+      <line x1="150" y1="243" x2="150" y2="20" stroke="#3C556B" stroke-width="1" stroke-dasharray="2 3"/>
+      <line x1="30" y1="135" x2="285" y2="135" stroke="#3C556B" stroke-width="1" stroke-dasharray="2 3"/>
+      <text x="156" y="30" font-size="10" font-weight="700" fill="#B5651E" font-family="monospace">d — flux axis</text>
+      <text x="278" y="150" font-size="10" font-weight="700" fill="#C8231E" font-family="monospace" text-anchor="end">q — torque</text>
+
+      <!-- angle arc -->
+      <polyline id="arc" fill="none" stroke="#9FB2C4" stroke-width="1.2"/>
+
+      <!-- component + resultant vectors -->
+      <line id="vId" x1="150" y1="135" x2="150" y2="135" stroke="#B5651E" stroke-width="5" stroke-linecap="round" marker-end="url(#hId)"/>
+      <line id="vIq" x1="150" y1="135" x2="150" y2="135" stroke="#C8231E" stroke-width="5" stroke-linecap="round" marker-end="url(#hIq)"/>
+      <line id="pP1" x1="0" y1="0" x2="0" y2="0" stroke="#9FB2C4" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <line id="pP2" x1="0" y1="0" x2="0" y2="0" stroke="#9FB2C4" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <line id="vIs" x1="150" y1="135" x2="150" y2="135" stroke="#2463A8" stroke-width="6" stroke-linecap="round" marker-end="url(#hIs)"/>
+      <text id="lblIs" x="0" y="0" font-size="10" font-weight="700" fill="#2463A8" font-family="monospace">Is</text>
+
+      <!-- rotating compass: frame is locked to the spinning rotor flux -->
+      <circle cx="258" cy="40" r="20" fill="#F7FAFD" stroke="#DCE5EE" stroke-width="1.4"/>
+      <line id="cmp" x1="258" y1="40" x2="258" y2="24" stroke="#B5651E" stroke-width="2.4" stroke-linecap="round"/>
+      <text x="258" y="72" font-size="7.5" fill="#9FB2C4" text-anchor="middle" font-family="monospace">θ flux angle</text>
+
+      <defs>
+        <marker id="hId" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#B5651E"/></marker>
+        <marker id="hIq" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#C8231E"/></marker>
+        <marker id="hIs" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#2463A8"/></marker>
+      </defs>
+    </svg>
+
+    <div class="srow">
+      <label for="idc"><span class="dot" style="background:#B5651E"></span>Flux current I_d</label>
+      <input id="idc" type="range" min="0.1" max="0.9" step="0.01" value="0.5" aria-label="Flux-producing current Id">
+      <span class="v" id="vIdc">0.50</span>
+    </div>
+    <div class="srow">
+      <label for="iq"><span class="dot" style="background:#C8231E"></span>Torque current I_q</label>
+      <input id="iq" type="range" min="0" max="1.2" step="0.01" value="1.0" aria-label="Torque-producing current Iq">
+      <span class="v" id="vIq">1.00</span>
+    </div>
+
+    <div class="readouts">
+      <div class="ro tq"><div class="lab">Torque</div><div class="val" id="roT">1.00×</div></div>
+      <div class="ro"><div class="lab">Flux</div><div class="val" id="roFx">100%</div></div>
+      <div class="ro"><div class="lab">Total Is</div><div class="val" id="roIs">1.12</div></div>
+      <div class="ro"><div class="lab">Angle</div><div class="val" id="roA">63°</div></div>
+    </div>
+    <div class="status ok" id="status">Flux held by I_d, torque set by I_q — two independent knobs.</div>
+  </div>
+
+  <!-- abc (AC reality) -->
+  <div class="card">
+    <h2>What the motor actually gets</h2>
+    <p class="h3">The very same current, unrolled into three AC phase currents</p>
+    <svg id="abc" viewBox="0 0 400 150" role="img" aria-label="The three phase currents corresponding to the dq state, sweeping in time">
+      <line x1="44" y1="80" x2="384" y2="80" stroke="#E3EAF1" stroke-width="1"/>
+      <polyline id="ia" fill="none" stroke="#2463A8" stroke-width="2"/>
+      <polyline id="ib" fill="none" stroke="#B5651E" stroke-width="2"/>
+      <polyline id="ic" fill="none" stroke="#3C556B" stroke-width="2"/>
+      <line id="cur" y1="14" y2="146" stroke="#C8231E" stroke-width="1.4" stroke-dasharray="3 3"/>
+      <circle id="da" r="3.5" fill="#2463A8"/><circle id="db" r="3.5" fill="#B5651E"/><circle id="dc" r="3.5" fill="#3C556B"/>
+    </svg>
+    <div class="legend">
+      <span><i class="swatch" style="background:#2463A8"></i>i_a</span>
+      <span><i class="swatch" style="background:#B5651E"></i>i_b</span>
+      <span><i class="swatch" style="background:#3C556B"></i>i_c</span>
+      <span style="color:var(--muted)">amplitude = |Is|, phase set by the d/q split</span>
+    </div>
+  </div>
+
+  <p class="note"><b>The whole idea in one screen.</b> Up top, in the frame that spins with the rotor flux, the current is just two steady numbers: <b style="color:#B5651E">I_d</b> holds the flux, <b style="color:#C8231E">I_q</b> makes the torque, and they sit at 90° like a DC motor's field and armature. Slide <b style="color:#C8231E">I_q</b> and torque tracks it <b>instantly</b> while flux doesn't budge — that decoupling is the entire point of FOC. Down below is the same current as the motor really sees it: three AC waves whose size and phase come straight from that d/q split. The Park/Clarke transform is the bridge between the calm top panel and the spinning bottom one — and it's the reason a modern winder can hold full tension at a dead stop.</p>
+
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 8</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const OX=150, OY=135, K=80;          // origin & px/unit for dq plot
+  const idc=$("idc"), iq=$("iq");
+  let Id=0.5, Iq=1.0, Is=1.118, phi=Math.atan2(1.0,0.5);
+  let theta=0, last=null;
+
+  function render(){
+    Id=+idc.value; Iq=+iq.value;
+    Is=Math.hypot(Id,Iq); phi=Math.atan2(Iq,Id);   // angle from d-axis
+    const Phi=Math.min(Id/0.5,1.1);                  // flux vs rated (Id=0.5 => 1.0)
+    const Tq=Phi*Iq;
+
+    // vectors (screen: d=up=-y, q=right=+x)
+    const dTipX=OX, dTipY=OY-Id*K;
+    const qTipX=OX+Iq*K, qTipY=OY;
+    const sTipX=OX+Iq*K, sTipY=OY-Id*K;
+    $("vId").setAttribute("x2",dTipX); $("vId").setAttribute("y2",dTipY);
+    $("vIq").setAttribute("x2",qTipX); $("vIq").setAttribute("y2",qTipY);
+    $("vIs").setAttribute("x2",sTipX); $("vIs").setAttribute("y2",sTipY);
+    $("pP1").setAttribute("x1",dTipX); $("pP1").setAttribute("y1",dTipY); $("pP1").setAttribute("x2",sTipX); $("pP1").setAttribute("y2",sTipY);
+    $("pP2").setAttribute("x1",qTipX); $("pP2").setAttribute("y1",qTipY); $("pP2").setAttribute("x2",sTipX); $("pP2").setAttribute("y2",sTipY);
+    $("lblIs").setAttribute("x",sTipX+6); $("lblIs").setAttribute("y",sTipY-4);
+
+    // angle arc from d-axis (up) toward Is
+    let a=""; const steps=18;
+    for(let i=0;i<=steps;i++){ const t=phi*i/steps; a+=(OX+30*Math.sin(t)).toFixed(1)+","+(OY-30*Math.cos(t)).toFixed(1)+" "; }
+    $("arc").setAttribute("points",a.trim());
+
+    // readouts
+    $("vIdc").textContent=Id.toFixed(2); $("vIq").textContent=Iq.toFixed(2);
+    $("roT").textContent=Tq.toFixed(2)+"×"; $("roFx").textContent=Math.round(Phi*100)+"%";
+    $("roIs").textContent=Is.toFixed(2); $("roA").textContent=Math.round(phi*180/Math.PI)+"°";
+
+    // status
+    const st=$("status"); st.className="status";
+    if(Id<0.3){ st.classList.add("warn"); st.textContent="Under-magnetised — flux is low, so you can't reach rated torque however hard you push I_q."; }
+    else if(Id>0.65){ st.classList.add("warn"); st.textContent="Over-magnetised — extra I_d past rated just heats the motor. There's a sweet spot (MTPA)."; }
+    else { st.classList.add("ok"); st.textContent="Flux held by I_d, torque set by I_q — decoupled, like a DC machine."; }
+
+    // rebuild abc sinusoids (shape depends on Is & phi)
+    let pa=[],pb=[],pc=[];
+    for(let d=0; d<=360; d+=3){ const psi=d*Math.PI/180;
+      pa.push((44+d/360*340)+","+(80-Is*Math.cos(psi+phi)*34).toFixed(1));
+      pb.push((44+d/360*340)+","+(80-Is*Math.cos(psi+phi-2.094)*34).toFixed(1));
+      pc.push((44+d/360*340)+","+(80-Is*Math.cos(psi+phi+2.094)*34).toFixed(1));
+    }
+    $("ia").setAttribute("points",pa.join(" "));
+    $("ib").setAttribute("points",pb.join(" "));
+    $("ic").setAttribute("points",pc.join(" "));
+  }
+
+  function loop(ts){
+    if(last==null) last=ts; const dt=(ts-last)/1000; last=ts;
+    theta=(theta+dt*45)%360;
+    // compass
+    const tr=theta*Math.PI/180;
+    $("cmp").setAttribute("x2",(258+16*Math.sin(tr)).toFixed(1));
+    $("cmp").setAttribute("y2",(40-16*Math.cos(tr)).toFixed(1));
+    // abc cursor + dots at psi=theta
+    const x=44+theta/360*340; const psi=tr;
+    $("cur").setAttribute("x1",x); $("cur").setAttribute("x2",x);
+    $("da").setAttribute("cx",x); $("da").setAttribute("cy",80-Is*Math.cos(psi+phi)*34);
+    $("db").setAttribute("cx",x); $("db").setAttribute("cy",80-Is*Math.cos(psi+phi-2.094)*34);
+    $("dc").setAttribute("cx",x); $("dc").setAttribute("cy",80-Is*Math.cos(psi+phi+2.094)*34);
+    requestAnimationFrame(loop);
+  }
+
+  [idc,iq].forEach(el=>el.addEventListener("input",render));
+  render(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

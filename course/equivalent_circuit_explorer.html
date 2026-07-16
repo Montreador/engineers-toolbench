@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equivalent Circuit → Torque Curve</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.4;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{background:var(--card); border:1px solid var(--tint);
+    border-radius:8px; padding:14px; margin-bottom:14px;}
+  .card h2{font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--slate); margin:0 0 8px;}
+  svg{display:block; width:100%; height:auto;}
+  .axis{stroke:var(--slate); stroke-width:1;}
+  .grid{stroke:#E3EAF1; stroke-width:1;}
+  .tick{font-size:9px; fill:var(--muted); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .axttl{font-size:9.5px; font-weight:700; letter-spacing:.03em;}
+  .sliders{display:grid; gap:10px; margin-top:4px;}
+  .srow{display:grid; grid-template-columns:74px 1fr 62px; align-items:center; gap:10px;}
+  .srow label{font-size:.82rem; font-weight:600;}
+  .srow .v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem;
+    text-align:right; color:var(--navy);}
+  input[type=range]{width:100%; height:26px;}
+  #V{accent-color:var(--crimson);} #R2{accent-color:var(--copper);} #X{accent-color:var(--steel);}
+  input[type=range]:focus-visible{outline:3px solid var(--copper); outline-offset:3px;}
+  .readouts{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px;}
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:8px 4px; text-align:center;}
+  .ro .lab{font-size:.58rem; letter-spacing:.05em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:1.0rem; font-weight:700; margin-top:2px;}
+  .ro.pk .val{color:#F2C078;}
+  .cap{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;
+    color:var(--muted); text-align:center; margin-top:10px;}
+  .cap b{color:var(--crimson);}
+  button{background:var(--steel); color:#fff; border:none; border-radius:6px;
+    font:inherit; font-weight:600; font-size:.8rem; padding:8px 14px; cursor:pointer; margin-top:12px;}
+  button:hover{background:#1d548f;}
+  button:focus-visible{outline:3px solid var(--copper); outline-offset:2px;}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 12px;}
+  .note b{color:var(--ink);}
+  /* circuit */
+  .wire{stroke:var(--slate); stroke-width:1.6; fill:none;}
+  .comp{fill:#fff;}
+  .fixed{stroke:#9FB2C4; stroke-width:1.4;}
+  .adjV{stroke:var(--crimson); stroke-width:1.8;}
+  .adjR{stroke:var(--copper); stroke-width:1.8;}
+  .adjX{stroke:var(--steel); stroke-width:1.8;}
+  .clab{font-size:10px; font-weight:700; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .cval{font-size:8.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; fill:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Equivalent Circuit → Torque Curve</h1>
+    <p>Per-phase model · R_th neglected · Module 4 explorer</p>
+  </header>
+
+  <!-- CIRCUIT -->
+  <div class="card">
+    <h2>Per-phase equivalent circuit</h2>
+    <svg viewBox="0 0 400 150" role="img" aria-label="Per-phase induction motor equivalent circuit with adjustable source voltage, leakage reactance and rotor resistance">
+      <!-- top rail -->
+      <path class="wire" d="M40,40 H120"/>
+      <path class="wire" d="M150,40 H210"/>
+      <path class="wire" d="M240,40 H300"/>
+      <path class="wire" d="M330,40 H360 V120"/>
+      <!-- bottom rail -->
+      <path class="wire" d="M40,120 H360"/>
+      <!-- source (left) -->
+      <path class="wire" d="M40,40 V70"/>
+      <path class="wire" d="M40,90 V120"/>
+      <circle class="comp adjV" cx="40" cy="80" r="12"/>
+      <path class="adjV" fill="none" d="M34,80 q3,-6 6,0 t6,0"/>
+      <text class="clab" x="16" y="76" fill="#C8231E">V</text>
+      <text class="cval" id="cV" x="8" y="90">1.00 pu</text>
+      <!-- R1 (fixed) -->
+      <rect class="comp fixed" x="120" y="33" width="30" height="14"/>
+      <text class="cval" x="135" y="28" text-anchor="middle" fill="#9FB2C4">R1</text>
+      <!-- jX1 (adjustable, half of X) -->
+      <rect class="comp adjX" x="210" y="33" width="30" height="14"/>
+      <text class="clab" x="225" y="28" text-anchor="middle" fill="#2463A8">jX1</text>
+      <!-- Xm magnetising branch (fixed) -->
+      <path class="wire" d="M180,40 V70"/>
+      <rect class="comp fixed" x="173" y="70" width="14" height="26"/>
+      <path class="wire" d="M180,96 V120"/>
+      <text class="cval" x="196" y="86" fill="#9FB2C4">Xm</text>
+      <!-- jX2 (adjustable) -->
+      <rect class="comp adjX" x="300" y="33" width="30" height="14"/>
+      <text class="clab" x="315" y="28" text-anchor="middle" fill="#2463A8">jX2</text>
+      <!-- R2/s (adjustable R2) on the return leg -->
+      <rect class="comp adjR" x="345" y="66" width="30" height="14" transform="rotate(90 360 73)"/>
+      <text class="clab" x="384" y="70" fill="#B5651E">R2/s</text>
+      <text class="cval" id="cR2" x="384" y="82">R2=0.15</text>
+      <!-- combined X readout -->
+      <text class="cval" id="cX" x="262" y="14" text-anchor="middle" fill="#2463A8">X(leak)=0.60</text>
+    </svg>
+    <p class="note" style="margin-bottom:0"><b>R2/s</b> is the only speed-dependent term — the whole curve is born from that one box. R1 and Xm are shown for completeness but dropped in the simplified maths (the Kloss form).</p>
+  </div>
+
+  <!-- CURVE -->
+  <div class="card">
+    <h2>Resulting torque–speed curve</h2>
+    <svg id="plot" viewBox="0 0 400 280" role="img" aria-label="Torque versus speed curve responding to the circuit sliders, with a dashed nominal reference curve">
+      <g id="gGrid"></g>
+      <polyline id="ghost" fill="none" stroke="#B9C6D6" stroke-width="1.6" stroke-dasharray="4 4"/>
+      <polyline id="curveT" fill="none" stroke="#2463A8" stroke-width="2.6"/>
+      <g id="gAxes"></g>
+      <line id="smLine" stroke="#B5651E" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <circle id="bd" r="5" fill="#C8231E" stroke="#fff" stroke-width="1.3"/>
+      <text id="bdlab" class="tick" fill="#C8231E"></text>
+    </svg>
+
+    <div class="sliders">
+      <div class="srow">
+        <label for="V" style="color:#C8231E">Voltage</label>
+        <input id="V" type="range" min="0.60" max="1.10" step="0.01" value="1.00" aria-label="Supply voltage per unit">
+        <span class="v" id="vV">1.00 pu</span>
+      </div>
+      <div class="srow">
+        <label for="R2" style="color:#B5651E">R₂ rotor</label>
+        <input id="R2" type="range" min="0.05" max="0.40" step="0.01" value="0.15" aria-label="Rotor resistance referred">
+        <span class="v" id="vR2">0.15</span>
+      </div>
+      <div class="srow">
+        <label for="X" style="color:#2463A8">X leakage</label>
+        <input id="X" type="range" min="0.40" max="1.00" step="0.02" value="0.60" aria-label="Total leakage reactance">
+        <span class="v" id="vX">0.60</span>
+      </div>
+    </div>
+
+    <div class="readouts">
+      <div class="ro"><div class="lab">Breakdown slip s_m</div><div class="val" id="roSm">25%</div></div>
+      <div class="ro pk"><div class="lab">Breakdown T_max</div><div class="val" id="roTmax">2.80×</div></div>
+      <div class="ro"><div class="lab">Starting torque</div><div class="val" id="roTst">1.32×</div></div>
+    </div>
+
+    <div class="cap" id="cap">V² factor = 100% of nominal breakdown torque</div>
+    <button id="reset">Reset to nominal</button>
+  </div>
+
+  <p class="note"><b>Two demonstrations to run:</b> First drag <b style="color:#B5651E">R₂</b> and watch the breakdown dot slide left along the speed axis while its <b>height never changes</b> — s_m carries R₂, T_max does not. That single fact is the whole principle of wound-rotor / slip-ring starting: bury resistance in the rotor to drag the peak (and the starting torque) toward standstill. Then drop <b style="color:#C8231E">voltage</b> and watch the entire curve <b>collapse as V²</b> against the grey nominal ghost — a 10% sag costs ~19% of torque, which is why an undervoltage quietly walks a loaded motor toward stall.</p>
+  <style>
+  .site-footer{background:#1A2B3B;color:#fff;margin:24px -14px 0;padding:13px 20px;
+    border-top:3px solid #B5651E;display:flex;flex-wrap:wrap;justify-content:space-between;
+    align-items:baseline;gap:8px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;}
+  .site-footer .brand{font-weight:700;letter-spacing:.04em;color:#fff;}
+  .site-footer .brand em{font-style:normal;color:#F2C078;}
+  .site-footer .mod{color:#DCE5EE;}
+  </style>
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 4</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const Ns=1500, K=3.36;                   // K tuned so nominal T_max = 2.8× at V=1,X=0.6
+  const NOM={V:1.00,R2:0.15,X:0.60};
+
+  // torque per phase (R_th neglected): T = K V² (R2/s) / [ (R2/s)² + X² ]
+  const Tq=(s,V,R2,X)=>{ s=Math.min(1,Math.max(1e-4,s)); const rs=R2/s; return K*V*V*rs/(rs*rs+X*X); };
+
+  // ---- plot geometry ----
+  const L=44,R=360,T=14,B=246;
+  const xN=n=>L+(n/Ns)*(R-L);
+  const yT=t=>B-(t/3.2)*(B-T);             // torque axis 0..3.2 pu
+
+  // grid + axes
+  let g="";
+  [0,1,2,3].forEach(t=>{ g+=`<line class="grid" x1="${L}" y1="${yT(t)}" x2="${R}" y2="${yT(t)}"/>`; });
+  $("gGrid").innerHTML=g;
+  let ax=`<line class="axis" x1="${L}" y1="${T}" x2="${L}" y2="${B}"/>
+          <line class="axis" x1="${L}" y1="${B}" x2="${R}" y2="${B}"/>`;
+  [0,1,2,3].forEach(t=>{ ax+=`<text class="tick" x="${L-6}" y="${yT(t)+3}" text-anchor="end">${t}</text>`; });
+  [0,375,750,1125,1500].forEach(n=>{ ax+=`<text class="tick" x="${xN(n)}" y="${B+13}" text-anchor="middle">${n}</text>`; });
+  ax+=`<text class="axttl" x="${L-30}" y="${T+4}" fill="#2463A8">Torque ×</text>`;
+  ax+=`<text class="axttl" x="${(L+R)/2}" y="${B+26}" text-anchor="middle" fill="#3C556B">Speed (rpm) →  Ns=1500</text>`;
+  $("gAxes").innerHTML=ax;
+
+  // ghost (nominal) curve — fixed
+  let pg=[];
+  for(let n=0;n<=Ns;n+=6){ pg.push(xN(n)+","+yT(Tq((Ns-n)/Ns,NOM.V,NOM.R2,NOM.X))); }
+  $("ghost").setAttribute("points",pg.join(" "));
+
+  const V=$("V"),R2=$("R2"),X=$("X");
+  function render(){
+    const v=+V.value, r2=+R2.value, x=+X.value;
+    // live curve
+    let p=[];
+    for(let n=0;n<=Ns;n+=6){ p.push(xN(n)+","+yT(Tq((Ns-n)/Ns,v,r2,x))); }
+    $("curveT").setAttribute("points",p.join(" "));
+
+    // key results
+    const sm=Math.min(1, r2/x);
+    const Tmax=K*v*v/(2*x);
+    const Tst=Tq(1,v,r2,x);
+    const nm=Ns*(1-sm);
+
+    // breakdown marker + slip guide
+    $("bd").setAttribute("cx",xN(nm)); $("bd").setAttribute("cy",yT(Tmax));
+    $("smLine").setAttribute("x1",xN(nm)); $("smLine").setAttribute("x2",xN(nm));
+    $("smLine").setAttribute("y1",yT(Tmax)); $("smLine").setAttribute("y2",B);
+    const bl=$("bdlab"); bl.textContent="s_m="+Math.round(sm*100)+"%";
+    bl.setAttribute("x",xN(nm)); bl.setAttribute("y",yT(Tmax)-8); bl.setAttribute("text-anchor","middle");
+
+    // slider value labels
+    $("vV").textContent=v.toFixed(2)+" pu"; $("vR2").textContent=r2.toFixed(2); $("vX").textContent=x.toFixed(2);
+    // circuit labels
+    $("cV").textContent=v.toFixed(2)+" pu"; $("cR2").textContent="R2="+r2.toFixed(2); $("cX").textContent="X(leak)="+x.toFixed(2);
+    // readouts
+    $("roSm").textContent=Math.round(sm*100)+"%";
+    $("roTmax").textContent=Tmax.toFixed(2)+"×";
+    $("roTst").textContent=Tst.toFixed(2)+"×";
+    // caption ties to the V² result
+    const pct=Math.round(v*v*100);
+    $("cap").innerHTML="V² factor = <b>"+pct+"%</b> of nominal breakdown torque";
+  }
+  [V,R2,X].forEach(el=>el.addEventListener("input",render));
+  $("reset").addEventListener("click",()=>{ V.value=NOM.V; R2.value=NOM.R2; X.value=NOM.X; render(); });
+  render();
+})();
+</script>
+</body>
+</html>

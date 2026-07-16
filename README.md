@@ -13,8 +13,13 @@ Live at [machinetinker.com](https://machinetinker.com).
 - **Reference** — Unit Converter, Dimensional Analysis (formula verification + Buckingham π derivation)
 - **Motors & Drives** — Motor Torque & Speed, Motor FLA & Inrush, VFD Cable Sizing
 - **Plastics Processing** — Blown Film Process, Bubble Stress
+- **Power Distribution** — PCB Trace Ampacity
 
 Every tool follows the same interaction model: amber values are ones you **set**, cyan values are ones the tool **measures** (solves for). Most calculators accept any valid subset of inputs and solve for the rest live, with an SVG diagram that updates to match.
+
+## Course
+
+[`course/`](course/index.html) is a standalone 10-module interactive course, "3-Phase Drives & Motors" — linked from the sidebar, separate from the calculator tools above. Each module is its own self-contained HTML page (own styling, no shared dependencies) covering induction motor and VFD behavior hands-on: the rotating field, the torque-speed curve, star/delta, the equivalent circuit, PM/reluctance rotors, V/f control, the rectifier-bus-inverter-PWM chain, vector control, braking/regen, and reflected-wave effects.
 
 ## Running it
 

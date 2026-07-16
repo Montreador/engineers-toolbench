@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotating Magnetic Field — Vector Summation</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.4;
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{
+    background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);
+  }
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{
+    background:var(--card); border:1px solid var(--tint);
+    border-radius:8px; padding:14px; margin-bottom:14px;
+  }
+  svg{display:block; width:100%; height:auto;}
+  .axis-line{stroke:var(--tint); stroke-width:1.4; stroke-dasharray:2 5;}
+  .locus{fill:none; stroke:var(--slate); stroke-width:1; stroke-dasharray:3 4; opacity:.5;}
+  .bore{fill:#F7FAFD; stroke:var(--slate); stroke-width:1.6;}
+  .rimlabel{font-weight:700; font-size:12px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .controls{display:flex; align-items:center; gap:12px; margin-top:2px;}
+  button{
+    background:var(--steel); color:#fff; border:none; border-radius:6px;
+    font:inherit; font-weight:600; font-size:.85rem; padding:9px 16px;
+    cursor:pointer; min-width:82px;
+  }
+  button:hover{background:#1d548f;}
+  button:focus-visible{outline:3px solid var(--copper); outline-offset:2px;}
+  input[type=range]{flex:1; accent-color:var(--steel); height:26px;}
+  input[type=range]:focus-visible{outline:3px solid var(--copper); outline-offset:3px;}
+  .readouts{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px;
+  }
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:8px 4px; text-align:center;}
+  .ro .lab{font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:1.0rem; font-weight:700; margin-top:2px;}
+  .ro.mag .val{color:#F2C078;}
+  .legend{display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; font-size:.76rem;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:14px; height:3px; border-radius:2px; display:inline-block;}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 0;}
+  .note b{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Rotating Magnetic Field — how three coils make one turning vector</h1>
+    <p>Ns = 120 f / p · Module 1 companion</p>
+  </header>
+
+  <div class="card">
+    <!-- BORE / VECTOR DIAGRAM -->
+    <svg viewBox="-125 -125 250 250" role="img" aria-label="Vector diagram of three phase field vectors summing to a rotating resultant">
+      <!-- locus of resultant tip -->
+      <circle class="locus" cx="0" cy="0" r="90"/>
+      <!-- bore -->
+      <circle class="bore" cx="0" cy="0" r="102"/>
+      <!-- coil axes (full diameters) -->
+      <line class="axis-line" x1="0" y1="102" x2="0" y2="-102"/>
+      <line class="axis-line" x1="-88.3" y1="51" x2="88.3" y2="-51"/>
+      <line class="axis-line" x1="88.3" y1="51" x2="-88.3" y2="-51"/>
+      <!-- rim labels -->
+      <text class="rimlabel" x="0"    y="-108" text-anchor="middle" fill="#2463A8">A</text>
+      <text class="rimlabel" x="96"   y="59"   text-anchor="middle" fill="#B5651E">B</text>
+      <text class="rimlabel" x="-96"  y="59"   text-anchor="middle" fill="#3C556B">C</text>
+
+      <!-- phase vectors -->
+      <line id="vecA" x1="0" y1="0" x2="0" y2="0" stroke="#2463A8" stroke-width="4" stroke-linecap="round" marker-end="url(#hA)"/>
+      <line id="vecB" x1="0" y1="0" x2="0" y2="0" stroke="#B5651E" stroke-width="4" stroke-linecap="round" marker-end="url(#hB)"/>
+      <line id="vecC" x1="0" y1="0" x2="0" y2="0" stroke="#3C556B" stroke-width="4" stroke-linecap="round" marker-end="url(#hC)"/>
+      <!-- resultant -->
+      <line id="vecR" x1="0" y1="0" x2="0" y2="0" stroke="#C8231E" stroke-width="6" stroke-linecap="round" marker-end="url(#hR)"/>
+      <circle id="tipR" cx="0" cy="0" r="4" fill="#C8231E"/>
+
+      <defs>
+        <marker id="hA" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#2463A8"/></marker>
+        <marker id="hB" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#B5651E"/></marker>
+        <marker id="hC" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#3C556B"/></marker>
+        <marker id="hR" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#C8231E"/></marker>
+      </defs>
+    </svg>
+
+    <div class="legend">
+      <span><i class="swatch" style="background:#2463A8"></i>Phase A field</span>
+      <span><i class="swatch" style="background:#B5651E"></i>Phase B field</span>
+      <span><i class="swatch" style="background:#3C556B"></i>Phase C field</span>
+      <span><i class="swatch" style="background:#C8231E; height:5px"></i><b>Resultant</b></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- SINE PLOT -->
+    <svg viewBox="0 0 360 130" role="img" aria-label="Three phase currents over one cycle with a cursor at the current angle">
+      <line x1="0" y1="65" x2="360" y2="65" stroke="#C9D6E3" stroke-width="1"/>
+      <polyline id="sineA" fill="none" stroke="#2463A8" stroke-width="2"/>
+      <polyline id="sineB" fill="none" stroke="#B5651E" stroke-width="2"/>
+      <polyline id="sineC" fill="none" stroke="#3C556B" stroke-width="2"/>
+      <line id="cursor" x1="0" y1="6" x2="0" y2="124" stroke="#C8231E" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <circle id="dotA" r="3.5" fill="#2463A8"/>
+      <circle id="dotB" r="3.5" fill="#B5651E"/>
+      <circle id="dotC" r="3.5" fill="#3C556B"/>
+    </svg>
+
+    <div class="controls">
+      <button id="play" aria-label="Play or pause the animation">▶ Play</button>
+      <input id="slider" type="range" min="0" max="360" value="0" step="1" aria-label="Electrical angle in degrees">
+    </div>
+
+    <div class="readouts">
+      <div class="ro"><div class="lab">Angle ωt</div><div class="val" id="roAngle">0°</div></div>
+      <div class="ro mag"><div class="lab">|Resultant|</div><div class="val" id="roMag">1.500</div></div>
+      <div class="ro"><div class="lab">Points to</div><div class="val" id="roDir">90°</div></div>
+    </div>
+  </div>
+
+  <p class="note"><b>What to watch:</b> each coloured vector only ever grows and shrinks <b>along its own fixed axis</b> — none of them rotate. Yet their sum (crimson) keeps a <b>constant length of 1.5×</b> peak and sweeps steadily round the dashed circle. That turning sum is the field the rotor chases. Change f and it sweeps faster or slower; that is the entire premise of the drive.</p>
+  <style>
+  .site-footer{background:#1A2B3B;color:#fff;margin:24px -14px 0;padding:13px 20px;
+    border-top:3px solid #B5651E;display:flex;flex-wrap:wrap;justify-content:space-between;
+    align-items:baseline;gap:8px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;}
+  .site-footer .brand{font-weight:700;letter-spacing:.04em;color:#fff;}
+  .site-footer .brand em{font-style:normal;color:#F2C078;}
+  .site-footer .mod{color:#DCE5EE;}
+  </style>
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 1</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const D2R = Math.PI/180;
+  // magnetic-axis unit vectors (math angles): A=90, B=-30, C=210
+  const AX = { A:{c:Math.cos(90*D2R),  s:Math.sin(90*D2R)},
+               B:{c:Math.cos(-30*D2R), s:Math.sin(-30*D2R)},
+               C:{c:Math.cos(210*D2R), s:Math.sin(210*D2R)} };
+  const SCALE = 60;          // px per unit current
+  const $ = id => document.getElementById(id);
+
+  // pre-draw sine polylines (x:0..360, y:65 - val*45)
+  function buildSine(id, phase){
+    let pts=[];
+    for(let d=0; d<=360; d+=2){
+      const v = Math.cos((d-phase)*D2R);
+      pts.push(d.toFixed(0)+","+(65 - v*45).toFixed(1));
+    }
+    $(id).setAttribute("points", pts.join(" "));
+  }
+  buildSine("sineA",0); buildSine("sineB",120); buildSine("sineC",240);
+
+  // set a vector line from origin along axis, length = current*SCALE (flip y for screen)
+  function setVec(id, axis, cur){
+    const x =  axis.c * cur * SCALE;
+    const y = -axis.s * cur * SCALE;   // screen y is inverted
+    const el = $(id);
+    el.setAttribute("x2", x.toFixed(2));
+    el.setAttribute("y2", y.toFixed(2));
+    return {x, y};
+  }
+
+  function draw(theta){
+    const iA = Math.cos(theta*D2R);
+    const iB = Math.cos((theta-120)*D2R);
+    const iC = Math.cos((theta+120)*D2R);
+
+    const a = setVec("vecA", AX.A, iA);
+    const b = setVec("vecB", AX.B, iB);
+    const c = setVec("vecC", AX.C, iC);
+
+    // resultant (already in screen coords because setVec returned screen x/y)
+    const rx = a.x + b.x + c.x;
+    const ry = a.y + b.y + c.y;
+    const vr = $("vecR");
+    vr.setAttribute("x2", rx.toFixed(2));
+    vr.setAttribute("y2", ry.toFixed(2));
+    $("tipR").setAttribute("cx", rx.toFixed(2));
+    $("tipR").setAttribute("cy", ry.toFixed(2));
+
+    // magnitude (in current units) & direction (math angle, screen->math flips y)
+    const magPx = Math.hypot(rx, ry);
+    const mag = magPx / SCALE;
+    let dir = Math.atan2(-ry, rx) / D2R;      // flip y back to math frame
+    if(dir < 0) dir += 360;
+
+    // sine cursor + dots
+    $("cursor").setAttribute("x1", theta); $("cursor").setAttribute("x2", theta);
+    $("dotA").setAttribute("cx", theta); $("dotA").setAttribute("cy", 65 - iA*45);
+    $("dotB").setAttribute("cx", theta); $("dotB").setAttribute("cy", 65 - iB*45);
+    $("dotC").setAttribute("cx", theta); $("dotC").setAttribute("cy", 65 - iC*45);
+
+    $("roAngle").textContent = Math.round(theta)+"°";
+    $("roMag").textContent   = mag.toFixed(3);
+    $("roDir").textContent   = Math.round(dir)+"°";
+  }
+
+  // ---- controls ----
+  const slider = $("slider"), playBtn = $("play");
+  let theta = 0, playing = false, last = null;
+  const DEG_PER_SEC = 55;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  slider.addEventListener("input", ()=>{ theta = +slider.value; draw(theta); });
+
+  function loop(ts){
+    if(!playing) return;
+    if(last==null) last = ts;
+    theta = (theta + (ts-last)/1000*DEG_PER_SEC) % 360;
+    last = ts;
+    slider.value = theta.toFixed(0);
+    draw(theta);
+    requestAnimationFrame(loop);
+  }
+  playBtn.addEventListener("click", ()=>{
+    playing = !playing;
+    playBtn.textContent = playing ? "❚❚ Pause" : "▶ Play";
+    if(playing){ last=null; requestAnimationFrame(loop); }
+  });
+
+  draw(0);
+})();
+</script>
+</body>
+</html>

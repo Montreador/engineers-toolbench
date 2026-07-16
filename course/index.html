@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3-Phase Drives & Motors — Interactive Course · machinetinker.com</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --gold:#F2C078; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.45;}
+  .wrap{max-width:600px; margin:0 auto; padding:0 14px 44px;}
+
+  /* ---- hero ---- */
+  header{background:var(--navy); color:#fff; margin:0 -14px 20px;
+    padding:26px 22px 24px; border-bottom:3px solid var(--copper);
+    display:flex; align-items:center; gap:20px;}
+  header .htext{flex:1; min-width:0;}
+  .eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.68rem;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--gold); margin:0 0 6px;}
+  header h1{font-size:1.5rem; line-height:1.12; margin:0; letter-spacing:-.01em; font-weight:800;}
+  header .sub{margin:8px 0 0; font-size:.82rem; color:var(--tint);}
+  .mark{width:104px; height:104px; flex:0 0 auto;}
+  .mk-axis{stroke:#3C556B; stroke-width:1.4; stroke-dasharray:2 4; opacity:.7;}
+  .mk-res{stroke:var(--crimson); stroke-width:4; stroke-linecap:round;}
+
+  /* ---- intro ---- */
+  .intro{font-size:.92rem; color:var(--ink); margin:0 2px 8px;}
+  .intro b{color:var(--navy);}
+  .status-line{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;
+    color:var(--muted); margin:0 2px 20px;}
+  .status-line .live{color:var(--steel); font-weight:700;}
+
+  /* ---- module grid ---- */
+  .grid{display:grid; grid-template-columns:1fr; gap:12px;}
+  @media(min-width:520px){ .grid{grid-template-columns:1fr 1fr;} }
+
+  .mod-card{display:block; text-decoration:none; color:inherit;
+    background:var(--card); border:1px solid var(--tint); border-radius:9px;
+    padding:15px 15px 16px; position:relative; overflow:hidden;
+    border-top:3px solid var(--steel); transition:transform .12s ease, box-shadow .12s ease;}
+  a.mod-card:hover{transform:translateY(-2px); box-shadow:0 6px 18px rgba(26,43,59,.13);}
+  a.mod-card:focus-visible{outline:3px solid var(--copper); outline-offset:2px;}
+  .mod-num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.68rem;
+    letter-spacing:.1em; color:var(--steel); font-weight:700;}
+  .mod-card h2{font-size:1.02rem; line-height:1.2; margin:5px 0 6px; letter-spacing:-.01em;}
+  .mod-card p{font-size:.82rem; color:var(--muted); margin:0;}
+  .go{margin-top:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:.72rem; font-weight:700; color:var(--copper);}
+  .go::after{content:" →";}
+
+  /* coming-soon: colour drained, per HMI principle — muted = not yet live */
+  .mod-card.soon{border-top-color:#C4D0DC; background:#F6F8FB;}
+  .mod-card.soon .mod-num{color:var(--muted);}
+  .mod-card.soon h2{color:var(--slate);}
+  .tag{display:inline-block; margin-top:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+    background:#E7EDF3; border-radius:4px; padding:3px 8px;}
+
+  /* ---- footer ---- */
+  .site-footer{background:var(--navy); color:#fff; margin:26px -14px 0; padding:15px 22px;
+    border-top:3px solid var(--copper); display:flex; flex-wrap:wrap; gap:6px 14px;
+    justify-content:space-between; align-items:baseline;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;}
+  .site-footer .brand{font-weight:700; letter-spacing:.04em;}
+  .site-footer .brand em{font-style:normal; color:var(--gold);}
+  .site-footer .meta{color:var(--tint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="htext">
+      <p class="eyebrow">machinetinker.com</p>
+      <h1>3-Phase Drives &amp; Motors</h1>
+      <p class="sub">An interactive course — tools you move, not diagrams you stare at.</p>
+    </div>
+    <svg class="mark" viewBox="-60 -60 120 120" aria-hidden="true">
+      <line class="mk-axis" x1="0" y1="52" x2="0" y2="-52"/>
+      <line class="mk-axis" x1="-45" y1="26" x2="45" y2="-26"/>
+      <line class="mk-axis" x1="45" y1="26" x2="-45" y2="-26"/>
+      <circle cx="0" cy="0" r="46" fill="none" stroke="#3C556B" stroke-width="1" stroke-dasharray="3 4" opacity=".4"/>
+      <line id="mkRes" class="mk-res" x1="0" y1="0" x2="0" y2="-46"/>
+      <circle id="mkTip" r="4" fill="#C8231E" cx="0" cy="-46"/>
+    </svg>
+  </header>
+
+  <p class="intro">A hands-on walk through how induction motors and variable-frequency drives actually behave. Every module is a <b>live tool</b> you can drag, load and break — built to run on its own, on a phone, with nothing to install.</p>
+  <p class="status-line"><span class="live">10 modules live</span> · more in progress</p>
+
+  <div class="grid">
+
+    <a class="mod-card" href="rotating_field_vector_sum.html">
+      <div class="mod-num">MODULE 01</div>
+      <h2>The rotating magnetic field</h2>
+      <p>Three coils pulsing on fixed axes sum to one turning vector. Drag through the cycle and watch synchronous speed appear. Ns = 120f/p.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="torque_speed_curve.html">
+      <div class="mod-num">MODULE 02</div>
+      <h2>Slip &amp; the torque–speed curve</h2>
+      <p>Push a load onto the curve and watch the motor settle — then shove it past breakdown and watch it stall. The keystone diagram.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="star_delta_terminal_box.html">
+      <div class="mod-num">MODULE 03</div>
+      <h2>Nameplate, star/delta &amp; the 400/230 trick</h2>
+      <p>Rewire the terminal box star↔delta and watch each coil's voltage land on rated — or go red when it's the wrong link for the supply.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="equivalent_circuit_explorer.html">
+      <div class="mod-num">MODULE 04</div>
+      <h2>Equivalent circuit → torque curve</h2>
+      <p>Drag R₂ and watch the breakdown peak slide while its height stays pinned; drop the volts and watch the whole curve collapse as V².</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="three_rotors.html">
+      <div class="mod-num">MODULE 05</div>
+      <h2>Beyond induction: PM &amp; reluctance</h2>
+      <p>Swap the rotor under one rotating field — watch induction slip and run hot while PM and reluctance rotors lock on, stay cool, then pull out.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="vf_control.html">
+      <div class="mod-num">MODULE 06</div>
+      <h2>V/f control — sliding the curve</h2>
+      <p>Set the frequency and watch the torque curve slide along the speed axis; find where the simple scheme sags at low speed, and fix it with boost.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="inside_the_drive.html">
+      <div class="mod-num">MODULE 07</div>
+      <h2>Inside the box: rectifier → bus → inverter → PWM</h2>
+      <p>Trace the power chain, then watch a sine-triangle PWM synthesiser build a sine from full-height DC pulses — the trick behind adjustable V and f.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="vector_control.html">
+      <div class="mod-num">MODULE 08</div>
+      <h2>Vector control — flux current vs torque current</h2>
+      <p>Split the stator current into a flux part and a torque part locked to the rotor flux, and watch the AC motor start behaving like a DC one.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="stopping_simulator.html">
+      <div class="mod-num">MODULE 09</div>
+      <h2>Braking &amp; regen — where the energy goes</h2>
+      <p>Race four ways to stop a spinning load — coast, ramp, brake resistor, DC injection — and watch the DC bus climb toward the trip line.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+    <a class="mod-card" href="reflected_wave.html">
+      <div class="mod-num">MODULE 10</div>
+      <h2>The dark side of PWM — reflected waves</h2>
+      <p>Watch a fast IGBT edge bounce off the motor and nearly double the terminal voltage; find your critical cable length and the filter that fixes it.</p>
+      <div class="go">Open the tool</div>
+    </a>
+
+  </div>
+
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="meta">Self-contained · embeddable · no dependencies</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const D2R=Math.PI/180, SCALE=30.7;   // 1.5 units * 30.7 ≈ 46px resultant
+  const AX={A:{c:0,s:1}, B:{c:Math.cos(-30*D2R),s:Math.sin(-30*D2R)}, C:{c:Math.cos(210*D2R),s:Math.sin(210*D2R)}};
+  const res=document.getElementById("mkRes"), tip=document.getElementById("mkTip");
+  const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function draw(th){
+    const iA=Math.cos(th*D2R), iB=Math.cos((th-120)*D2R), iC=Math.cos((th+120)*D2R);
+    const x=(AX.A.c*iA+AX.B.c*iB+AX.C.c*iC)*SCALE;
+    const y=-(AX.A.s*iA+AX.B.s*iB+AX.C.s*iC)*SCALE;   // screen y inverted
+    res.setAttribute("x2",x.toFixed(1)); res.setAttribute("y2",y.toFixed(1));
+    tip.setAttribute("cx",x.toFixed(1)); tip.setAttribute("cy",y.toFixed(1));
+  }
+  if(reduce){ draw(30); return; }
+  let th=0, last=null;
+  function loop(ts){ if(last==null)last=ts; th=(th+(ts-last)/1000*42)%360; last=ts; draw(th); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

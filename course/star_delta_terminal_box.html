@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star / Delta Terminal Box — the 400/230 trick</title>
+<style>
+  :root{
+    --navy:#1A2B3B; --steel:#2463A8; --slate:#3C556B;
+    --copper:#B5651E; --gold:#F2C078; --crimson:#C8231E; --tint:#DCE5EE;
+    --page:#EEF2F7; --card:#FFFFFF; --ink:#1A2B3B; --muted:#5A6B7C;
+    --good:#2E7D57; --amber:#B5651E;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.45;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 14px 40px;}
+  header{background:var(--navy); color:#fff; margin:0 -14px 18px;
+    padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
+  header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
+  header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .card{background:var(--card); border:1px solid var(--tint);
+    border-radius:8px; padding:14px; margin-bottom:14px;}
+  .card h2{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--slate); margin:0 0 8px;}
+  svg{display:block; width:100%; height:auto;}
+  /* controls */
+  .ctl{display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin:4px 0 2px;}
+  .ctl .grp{display:flex; align-items:center; gap:8px;}
+  .ctl .lbl{font-size:.74rem; color:var(--muted); font-weight:600;}
+  .seg{display:inline-flex; border:1px solid var(--tint); border-radius:7px; overflow:hidden;}
+  .seg button{background:#fff; color:var(--navy); border:none; font:inherit;
+    font-weight:600; font-size:.82rem; padding:8px 13px; cursor:pointer;}
+  .seg button+button{border-left:1px solid var(--tint);}
+  .seg button.on{background:var(--steel); color:#fff;}
+  .seg button:focus-visible{outline:3px solid var(--copper); outline-offset:-3px;}
+  /* readouts */
+  .readouts{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px;}
+  .ro{background:var(--navy); color:#fff; border-radius:6px; padding:8px 4px; text-align:center;}
+  .ro .lab{font-size:.56rem; letter-spacing:.05em; text-transform:uppercase; color:var(--tint);}
+  .ro .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:1.0rem; font-weight:700; margin-top:2px;}
+  .ro.w .val{color:var(--gold);}
+  /* verdict */
+  .verdict{margin-top:12px; border-radius:7px; padding:11px 13px; color:#fff;}
+  .verdict .vt{font-weight:700; font-size:.92rem;}
+  .verdict .vs{font-size:.78rem; opacity:.92; margin-top:2px;}
+  .verdict.good{background:var(--good);}
+  .verdict.amber{background:var(--copper);}
+  .verdict.bad{background:var(--crimson);}
+  .curr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.74rem;
+    color:var(--muted); text-align:center; margin-top:10px;}
+  .note{font-size:.8rem; color:var(--muted); margin:2px 2px 12px;}
+  .note b{color:var(--ink);}
+  /* terminal box visuals */
+  .plate{fill:#F7FAFD; stroke:var(--slate); stroke-width:1.6;}
+  .stud{fill:#fff; stroke:var(--navy); stroke-width:1.8;}
+  .studtx{font-size:10px; font-weight:700; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; fill:var(--navy);}
+  .link{stroke:var(--copper); stroke-width:8; stroke-linecap:round;}
+  .lead{stroke:var(--slate); stroke-width:2;}
+  .leadtx{font-size:9.5px; font-weight:700; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; fill:var(--steel);}
+  .swap{transition:opacity .2s ease;}
+  .wind{stroke:var(--steel); stroke-width:5; fill:none; stroke-linecap:round;}
+  .vphi{font-size:10px; font-weight:700; fill:var(--copper); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .vline{font-size:10px; font-weight:700; fill:var(--crimson); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .pt{font-size:8.5px; fill:var(--muted); font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  /* footer */
+  .site-footer{background:var(--navy); color:#fff; margin:24px -14px 0; padding:13px 20px;
+    border-top:3px solid var(--copper); display:flex; flex-wrap:wrap; justify-content:space-between;
+    align-items:baseline; gap:8px 14px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem;}
+  .site-footer .brand{font-weight:700; letter-spacing:.04em;}
+  .site-footer .brand em{font-style:normal; color:var(--gold);}
+  .site-footer .mod{color:var(--tint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Star / Delta Terminal Box — how one motor runs on two voltages</h1>
+    <p>Windings rated 230 V each · Module 3</p>
+  </header>
+
+  <!-- CONTROLS -->
+  <div class="card">
+    <div class="ctl">
+      <div class="grp">
+        <span class="lbl">Supply</span>
+        <span class="seg" id="segV">
+          <button data-v="230">230 V</button>
+          <button data-v="400" class="on">400 V</button>
+          <button data-v="690">690 V</button>
+        </span>
+      </div>
+      <div class="grp">
+        <span class="lbl">Link</span>
+        <span class="seg" id="segC">
+          <button data-c="star" class="on">Star ⅄</button>
+          <button data-c="delta">Delta △</button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TERMINAL BOX -->
+  <div class="card">
+    <h2>The terminal block — link bars decide it</h2>
+    <svg viewBox="0 0 320 205" role="img" aria-label="Six-terminal motor block with link bars in star or delta arrangement">
+      <!-- supply leads -->
+      <g>
+        <line class="lead" x1="80"  y1="42" x2="80"  y2="62"/>
+        <line class="lead" x1="160" y1="42" x2="160" y2="62"/>
+        <line class="lead" x1="240" y1="42" x2="240" y2="62"/>
+        <text class="leadtx" x="80"  y="36" text-anchor="middle">L1</text>
+        <text class="leadtx" x="160" y="36" text-anchor="middle">L2</text>
+        <text class="leadtx" x="240" y="36" text-anchor="middle">L3</text>
+      </g>
+      <!-- plate -->
+      <rect class="plate" x="30" y="55" width="260" height="120" rx="8"/>
+
+      <!-- link bars: STAR (horizontal across bottom row) -->
+      <g id="gStar" class="swap">
+        <line class="link" x1="80" y1="145" x2="160" y2="145"/>
+        <line class="link" x1="160" y1="145" x2="240" y2="145"/>
+      </g>
+      <!-- link bars: DELTA (vertical, each column) -->
+      <g id="gDelta" class="swap">
+        <line class="link" x1="80"  y1="75" x2="80"  y2="145"/>
+        <line class="link" x1="160" y1="75" x2="160" y2="145"/>
+        <line class="link" x1="240" y1="75" x2="240" y2="145"/>
+      </g>
+
+      <!-- studs: top U1 V1 W1 -->
+      <g>
+        <circle class="stud" cx="80"  cy="75" r="15"/><text class="studtx" x="80"  y="79" text-anchor="middle">U1</text>
+        <circle class="stud" cx="160" cy="75" r="15"/><text class="studtx" x="160" y="79" text-anchor="middle">V1</text>
+        <circle class="stud" cx="240" cy="75" r="15"/><text class="studtx" x="240" y="79" text-anchor="middle">W1</text>
+        <!-- bottom W2 U2 V2 (note the stagger) -->
+        <circle class="stud" cx="80"  cy="145" r="15"/><text class="studtx" x="80"  y="149" text-anchor="middle">W2</text>
+        <circle class="stud" cx="160" cy="145" r="15"/><text class="studtx" x="160" y="149" text-anchor="middle">U2</text>
+        <circle class="stud" cx="240" cy="145" r="15"/><text class="studtx" x="240" y="149" text-anchor="middle">V2</text>
+      </g>
+      <text class="pt" x="160" y="197" text-anchor="middle" id="linkNote">horizontal bars = star</text>
+    </svg>
+    <p class="note" style="margin-bottom:0">The bottom row is labelled <b>W2 · U2 · V2</b> — deliberately shifted. That stagger is what lets the <b>same three bars</b> make star when laid flat and delta when stood upright. Turn the bars 90°, change the motor.</p>
+  </div>
+
+  <!-- TOPOLOGY + VOLTAGES -->
+  <div class="card">
+    <h2>What each coil actually sees</h2>
+    <svg viewBox="0 0 320 175" role="img" aria-label="Winding topology showing per-winding and line voltages">
+      <!-- STAR topology (Y) -->
+      <g id="tStar" class="swap">
+        <line class="wind" x1="160" y1="95" x2="160" y2="40"/>
+        <line class="wind" x1="160" y1="95" x2="88"  y2="140"/>
+        <line class="wind" x1="160" y1="95" x2="232" y2="140"/>
+        <circle cx="160" cy="95" r="4" fill="#3C556B"/>
+        <text class="pt" x="160" y="112" text-anchor="middle">star point (N)</text>
+        <circle cx="160" cy="40" r="4" fill="#2463A8"/><text class="leadtx" x="160" y="30" text-anchor="middle">L1</text>
+        <circle cx="88"  cy="140" r="4" fill="#2463A8"/><text class="leadtx" x="78" y="155" text-anchor="middle">L2</text>
+        <circle cx="232" cy="140" r="4" fill="#2463A8"/><text class="leadtx" x="242" y="155" text-anchor="middle">L3</text>
+        <text class="vphi" id="vpS" x="168" y="70">Vφ 230</text>
+        <line x1="88" y1="140" x2="232" y2="140" stroke="#C8231E" stroke-width="1" stroke-dasharray="4 3"/>
+        <text class="vline" id="vlS" x="160" y="172" text-anchor="middle">V_line 400  (= √3 × Vφ)</text>
+      </g>
+      <!-- DELTA topology (triangle) -->
+      <g id="tDelta" class="swap">
+        <line class="wind" x1="160" y1="38" x2="86"  y2="138"/>
+        <line class="wind" x1="86"  y1="138" x2="234" y2="138"/>
+        <line class="wind" x1="234" y1="138" x2="160" y2="38"/>
+        <circle cx="160" cy="38" r="4" fill="#2463A8"/><text class="leadtx" x="160" y="28" text-anchor="middle">L1</text>
+        <circle cx="86"  cy="138" r="4" fill="#2463A8"/><text class="leadtx" x="76" y="153" text-anchor="middle">L2</text>
+        <circle cx="234" cy="138" r="4" fill="#2463A8"/><text class="leadtx" x="244" y="153" text-anchor="middle">L3</text>
+        <text class="vphi" id="vpD" x="104" y="86" transform="rotate(-53 104 86)">Vφ 230</text>
+        <text class="vline" id="vlD" x="160" y="170" text-anchor="middle">V_line 230  (= Vφ, across each coil)</text>
+      </g>
+    </svg>
+
+    <div class="readouts">
+      <div class="ro"><div class="lab">Line voltage</div><div class="val" id="roVL">400 V</div></div>
+      <div class="ro w"><div class="lab">Per winding</div><div class="val" id="roVW">230 V</div></div>
+      <div class="ro"><div class="lab">vs rated 230</div><div class="val" id="roR">1.00×</div></div>
+    </div>
+
+    <div class="verdict good" id="verdict">
+      <div class="vt" id="vTitle">Windings at rated 230 V — correct</div>
+      <div class="vs" id="vSub">400 V supply, star: 400 ÷ √3 = 230 V on each coil.</div>
+    </div>
+    <div class="curr" id="curr">I_line = I_winding</div>
+  </div>
+
+  <p class="note"><b>The trick in one line:</b> every coil is happiest at 230 V — and <b>230 V delta</b> and <b>400 V star</b> both deliver exactly that. Same motor, two supplies, identical winding voltage. Now try the one that bites people: <b>400 V + delta</b>. The coils get the full 400 V — <b>√3 over rated</b> — and the verdict goes red. That single mis-link, delta on a 400 V supply when the plate says 230/400, is a genuine motor-killer: it looks wired, it even runs for a moment, then it cooks.</p>
+
+  <style>
+  </style>
+  <footer class="site-footer">
+    <span class="brand">machine<em>tinker</em>.com</span>
+    <span class="mod">3-Phase Drives &amp; Motors · Module 3</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const RATED=230, R3=Math.sqrt(3);
+  let state={V:400, conn:"star"};
+
+  function render(){
+    const isStar = state.conn==="star";
+    const Vw = isStar ? state.V/R3 : state.V;
+    const ratio = Vw/RATED;
+
+    // link bars + topology visibility
+    $("gStar").style.opacity  = isStar?1:0;
+    $("gDelta").style.opacity = isStar?0:1;
+    $("tStar").style.opacity  = isStar?1:0;
+    $("tDelta").style.opacity = isStar?0:1;
+    $("linkNote").textContent = isStar?"horizontal bars = star":"vertical bars = delta";
+
+    // topology voltage labels
+    $("vpS").textContent = "Vφ "+Math.round(state.V/R3);
+    $("vlS").textContent = "V_line "+state.V+"  (= √3 × Vφ)";
+    $("vpD").textContent = "Vφ "+state.V;
+    $("vlD").textContent = "V_line "+state.V+"  (= Vφ, across each coil)";
+
+    // readouts
+    $("roVL").textContent = state.V+" V";
+    $("roVW").textContent = Math.round(Vw)+" V";
+    $("roR").textContent  = ratio.toFixed(2)+"×";
+
+    // active buttons
+    document.querySelectorAll("#segV button").forEach(b=>b.classList.toggle("on", +b.dataset.v===state.V));
+    document.querySelectorAll("#segC button").forEach(b=>b.classList.toggle("on", b.dataset.c===state.conn));
+
+    // verdict
+    const v=$("verdict"), t=$("vTitle"), s=$("vSub");
+    v.classList.remove("good","amber","bad");
+    if(ratio>=0.95 && ratio<=1.06){
+      v.classList.add("good");
+      t.textContent="Windings at rated "+Math.round(Vw)+" V — correct";
+      s.textContent = isStar
+        ? state.V+" V supply, star: "+state.V+" ÷ √3 = "+Math.round(Vw)+" V on each coil."
+        : state.V+" V supply, delta: each coil sees the full "+state.V+" V.";
+    } else if(ratio<0.95){
+      v.classList.add("amber");
+      t.textContent="Under-volt: "+Math.round(Vw)+" V on 230 V windings";
+      s.textContent="Weak flux, low torque, and it can overheat under load. Wrong link for this supply.";
+    } else {
+      v.classList.add("bad");
+      t.textContent="OVER-VOLT: "+Math.round(Vw)+" V on 230 V windings";
+      s.textContent = ratio>1.5
+        ? "≈ √3 over rated — the classic delta-on-400 V mistake. Saturation, overcurrent, cooked insulation."
+        : "Insulation and thermal overstress. Wrong link for this supply.";
+    }
+
+    // current relationship
+    $("curr").textContent = isStar ? "I_line = I_winding" : "I_line = √3 × I_winding  (≈ 1.73×)";
+  }
+
+  $("segV").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; state.V=+b.dataset.v; render(); });
+  $("segC").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; state.conn=b.dataset.c; render(); });
+  render();
+})();
+</script>
+</body>
+</html>
