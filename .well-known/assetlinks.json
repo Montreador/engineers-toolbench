@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.machinetinker.twa",
+        "sha256_cert_fingerprints": ["D3:14:DD:FF:5F:0E:48:C8:80:67:E2:A5:18:66:67:60:A4:44:42:D3:43:D9:DB:CE:77:4A:88:78:2B:2E:B1:DD"]
+      }
+    }]

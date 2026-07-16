@@ -1,2 +1,11 @@
 .claude/
 *.zip
+
+# Android/Bubblewrap build artifacts and secrets — never commit the keystore
+android.keystore
+*.apk
+*.apk.idsig
+*.aab
+.gradle/
+build/
+app/build/
