@@ -21,6 +21,8 @@ Every tool follows the same interaction model: amber values are ones you **set**
 
 [`course/`](course/index.html) is a standalone 10-module interactive course, "3-Phase Drives & Motors" — linked from the sidebar, separate from the calculator tools above. Each module is its own self-contained HTML page (own styling, no shared dependencies) covering induction motor and VFD behavior hands-on: the rotating field, the torque-speed curve, star/delta, the equivalent circuit, PM/reluctance rotors, V/f control, the rectifier-bus-inverter-PWM chain, vector control, braking/regen, and reflected-wave effects.
 
+[`field-drill.html`](field-drill.html) is a standalone flashcard-style trainer, also linked from the sidebar — five decks (Sensors, Signals, Safety, Drives, Isolate) drilling PNP/NPN sensor wiring, 4-20mA current loops, IO-Link, and related field-electrical fundamentals.
+
 ## Running it
 
 Just open `index.html` in any modern browser. To serve it locally instead:

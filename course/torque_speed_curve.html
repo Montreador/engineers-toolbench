@@ -19,6 +19,8 @@
     padding:18px 20px 16px; border-bottom:3px solid var(--copper);}
   header h1{font-size:1.05rem; margin:0; letter-spacing:.02em;}
   header p{margin:4px 0 0; font-size:.78rem; color:var(--tint); opacity:.9;}
+  .backlink{display:inline-flex; align-items:center; gap:5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.7rem; letter-spacing:.08em; color:var(--tint); text-decoration:none; opacity:.75; margin-bottom:8px;}
+  .backlink:hover{opacity:1;}
   .card{background:var(--card); border:1px solid var(--tint);
     border-radius:8px; padding:14px; margin-bottom:14px;}
   svg{display:block; width:100%; height:auto;}
@@ -51,6 +53,7 @@
 <body>
 <div class="wrap">
   <header>
+    <a class="backlink" href="index.html">← Course</a>
     <h1>Torque–Speed Curve — the rotor chases, never catches, and the gap is slip</h1>
     <p>4-pole, 50 Hz · Ns = 1500 rpm · Module 2</p>
   </header>

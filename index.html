@@ -113,6 +113,8 @@
   .nav-item.soon:hover { background: none; color: #5a6270; }
   .nav-external { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); text-decoration: none; }
   .nav-external .ext-icon { color: var(--amber); flex-shrink: 0; }
+  .nav-external-sub { text-decoration: none; }
+  .nav-external-sub .ext-icon { color: var(--amber); flex-shrink: 0; }
   .tag {
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: #6b7280;
     border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
@@ -5413,6 +5415,12 @@
   courseLink.target = "_blank";
   courseLink.rel = "noopener";
   navEl.appendChild(courseLink);
+
+  const fieldDrillLink = el("a", "nav-item nav-external-sub", `Field Drill <span class="ext-icon">↗</span>`);
+  fieldDrillLink.href = "field-drill.html";
+  fieldDrillLink.target = "_blank";
+  fieldDrillLink.rel = "noopener";
+  navEl.appendChild(fieldDrillLink);
 
   function setExpandedGroup(name) {
     Object.entries(navGroups).forEach(([gname, g]) => {

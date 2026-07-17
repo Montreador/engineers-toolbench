@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#16181D">
+<title>Field Drill · Sensors · Signals · Safety · Drives · Isolation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16181D;
+    --panel:#1E2128;
+    --panel-2:#232730;
+    --line:#31353F;
+    --line-soft:#282C34;
+    --ink:#E9E7E2;
+    --muted:#8B929C;
+    --faint:#5A616B;
+    --bn:#C0803F;   /* conductor brown  +24V */
+    --bu:#3B8CD1;   /* conductor blue   0V   */
+    --bk:#C9CDD4;   /* conductor black  signal (light so it reads on dark) */
+    --amber:#F0B429;/* energised / active / flip affordance */
+    --green:#4FA96A;/* got it */
+    --red:#E05646;  /* review / danger */
+    --shadow:0 18px 40px -18px rgba(0,0,0,.7),0 2px 0 rgba(255,255,255,.02) inset;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1b1e25 0%, var(--bg) 55%);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex;justify-content:center;
+    padding:
+      max(14px,env(safe-area-inset-top))
+      14px
+      max(14px,env(safe-area-inset-bottom));
+    min-height:100dvh;
+  }
+  .app{width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px}
+
+  /* ---------- header ---------- */
+  .head{display:block}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.22em;color:var(--amber);text-transform:uppercase;margin-bottom:11px}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-decoration:none;margin-bottom:14px;transition:.15s}
+  .backlink:hover{color:var(--amber)}
+  .deckseg{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .deckbtn{flex:1;min-width:0;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:12px;letter-spacing:0;text-transform:uppercase;color:var(--muted);background:transparent;border:none;border-radius:8px;padding:10px 3px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .deckbtn[aria-selected="true"]{color:var(--bg);background:var(--amber)}
+  .deckbtn:not([aria-selected="true"]):hover{color:var(--ink)}
+  .deckbtn:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+  .deckmeta{margin-top:11px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.07em;color:var(--faint);display:flex;gap:7px;align-items:center}
+  .deckmeta .dot-sep{color:var(--line)}
+  .brand{display:flex;flex-direction:column;line-height:1}
+  .brand .ey{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.22em;
+    color:var(--amber);text-transform:uppercase;margin-bottom:7px}
+  .brand h1{
+    font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:23px;
+    letter-spacing:.02em;text-transform:uppercase}
+  .brand .sub{color:var(--muted);font-size:12px;margin-top:3px;letter-spacing:.02em}
+  .docref{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--faint);
+    border:1px solid var(--line);border-radius:5px;padding:5px 8px;
+    letter-spacing:.08em;white-space:nowrap}
+
+  /* ---------- category chips ---------- */
+  .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;font-family:"Chakra Petch",sans-serif;font-weight:600;
+    font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted);background:var(--panel);border:1px solid var(--line);
+    padding:8px 13px;border-radius:20px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .chip:hover{color:var(--ink);border-color:var(--faint)}
+  .chip[aria-pressed="true"]{color:var(--bg);background:var(--amber);border-color:var(--amber)}
+  .chip:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  /* ---------- terminal-strip progress ---------- */
+  .strip{display:flex;gap:3px;height:9px}
+  .seg{flex:1;border-radius:2px;background:var(--line-soft);border:1px solid transparent;transition:.15s}
+  .seg.cur{background:var(--amber);box-shadow:0 0 0 1px var(--amber)}
+  .seg.got{background:var(--green)}
+  .seg.rev{background:var(--red)}
+
+  /* ---------- card ---------- */
+  .stage{perspective:1600px;flex:1;min-height:0}
+  .card{
+    position:relative;width:100%;height:100%;min-height:340px;
+    transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.7,.2,1);
+    cursor:pointer}
+  .card.flip{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+    padding:22px 20px 18px;display:flex;flex-direction:column;overflow:hidden}
+  .face::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cat,var(--faint))}
+  .back{transform:rotateY(180deg)}
+
+  .meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .cat{
+    font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--cat,var(--muted))}
+  .num{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);letter-spacing:.06em}
+
+  .q{
+    font-family:"Chakra Petch",sans-serif;font-weight:600;
+    font-size:clamp(21px,5.6vw,27px);line-height:1.24;letter-spacing:.005em}
+  .qwrap{flex:1;display:flex;align-items:center}
+
+  .alabel{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.2em;
+    color:var(--green);text-transform:uppercase;margin-bottom:10px}
+  .a{font-size:clamp(15px,4vw,17px);line-height:1.5;color:var(--ink)}
+  .a b{color:var(--amber);font-weight:600}
+  .a .bn{color:var(--bn);font-weight:600}
+  .a .bu{color:var(--bu);font-weight:600}
+  .a .bk{color:var(--bk);font-weight:600}
+  .backscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
+  .backscroll::-webkit-scrollbar{width:4px}
+  .backscroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+
+  .why{
+    margin-top:14px;border:1px solid var(--line);border-left:3px solid var(--amber);
+    background:rgba(240,180,41,.06);border-radius:0 7px 7px 0;padding:11px 13px}
+  .why .wl{
+    font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.2em;
+    color:var(--amber);text-transform:uppercase;margin-bottom:5px}
+  .why p{font-size:13.5px;line-height:1.5;color:#D7D4CD}
+  .why.danger{border-left-color:var(--red);background:rgba(224,86,70,.07)}
+  .why.danger .wl{color:var(--red)}
+
+  /* schematic */
+  .fig{margin-top:15px;display:flex;justify-content:center}
+  .fig svg{width:100%;max-width:280px;height:auto}
+  .fig text{font-family:"IBM Plex Mono",monospace}
+
+  .hint{
+    margin-top:auto;padding-top:14px;display:flex;align-items:center;gap:8px;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.16em;
+    color:var(--faint);text-transform:uppercase}
+  .hint .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+
+  /* recall buttons on back */
+  .recall{margin-top:14px;display:flex;gap:9px}
+  .rbtn{
+    flex:1;font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:12px;
+    letter-spacing:.08em;text-transform:uppercase;padding:12px;border-radius:8px;
+    cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--muted);transition:.15s}
+  .rbtn.got:hover,.rbtn.got.on{color:var(--bg);background:var(--green);border-color:var(--green)}
+  .rbtn.rev:hover,.rbtn.rev.on{color:var(--bg);background:var(--red);border-color:var(--red)}
+  .rbtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  /* ---------- controls ---------- */
+  .controls{display:flex;gap:9px;align-items:stretch}
+  .nav{
+    flex:0 0 auto;width:56px;display:flex;align-items:center;justify-content:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);cursor:pointer;font-size:20px;transition:.15s}
+  .nav:hover{border-color:var(--faint);background:var(--panel-2)}
+  .nav:active{transform:translateY(1px)}
+  .nav:disabled{opacity:.3;cursor:default}
+  .flipbtn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:var(--amber);color:var(--bg);border:none;border-radius:10px;cursor:pointer;
+    font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:14px;letter-spacing:.09em;
+    text-transform:uppercase;transition:.15s}
+  .flipbtn small{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:9px;letter-spacing:.12em;opacity:.7}
+  .flipbtn:hover{filter:brightness(1.06)}
+  .flipbtn:active{transform:translateY(1px)}
+  .nav:focus-visible,.flipbtn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ---------- footer bar ---------- */
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .score{display:flex;gap:14px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em}
+  .score span{color:var(--faint)}
+  .score b{font-weight:600}
+  .score .g b{color:var(--green)}
+  .score .r b{color:var(--red)}
+  .tools{display:flex;gap:7px}
+  .tool{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    padding:7px 10px;cursor:pointer;transition:.15s}
+  .tool:hover{color:var(--ink);border-color:var(--faint)}
+  .tool[aria-pressed="true"]{color:var(--bg);background:var(--red);border-color:var(--red)}
+  .tool:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
+  .lc{text-transform:none}
+
+  /* ---------- learn more button ---------- */
+  .morebtn{
+    width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:9px;
+    background:transparent;border:1px dashed var(--line);border-radius:8px;padding:11px;
+    cursor:pointer;color:var(--muted);transition:.15s}
+  .morebtn span{font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  .morebtn small{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;color:var(--faint)}
+  .morebtn:hover{border-color:var(--amber);color:var(--amber)}
+  .morebtn:hover small{color:var(--amber);opacity:.7}
+  .morebtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  /* ---------- deeper-dive sheet ---------- */
+  .sheet-wrap{position:fixed;inset:0;z-index:50;display:none}
+  .sheet-wrap.open{display:block}
+  .sheet-bd{position:absolute;inset:0;background:rgba(8,9,11,.66);opacity:0;transition:opacity .25s ease}
+  .sheet-wrap.open .sheet-bd{opacity:1}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;
+    max-height:88dvh;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-bottom:none;border-radius:16px 16px 0 0;
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.8);
+    transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.8,.2,1);
+    padding:10px 20px max(20px,env(safe-area-inset-bottom))}
+  .sheet-wrap.open .sheet{transform:translateY(0)}
+  .sheet-grab{width:38px;height:4px;border-radius:4px;background:var(--line);margin:6px auto 12px}
+  .sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line-soft)}
+  .sheet-cat{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+  .sheet-title{font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:17px;line-height:1.3}
+  .sheet-x{flex:0 0 auto;width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:13px;cursor:pointer;transition:.15s}
+  .sheet-x:hover{color:var(--ink);border-color:var(--faint)}
+  .sheet-x:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:14px}
+  .sheet-body::-webkit-scrollbar{width:5px}
+  .sheet-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
+  .sheet-body h4{font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--amber);margin:16px 0 6px}
+  .sheet-body h4:first-child{margin-top:0}
+  .sheet-body p{font-size:14.5px;line-height:1.6;color:#D7D4CD;margin-bottom:4px}
+  .sheet-body p+p{margin-top:8px}
+  .sheet-body b{color:var(--amber);font-weight:600}
+  .sheet-body .bn{color:var(--bn);font-weight:600}
+  .sheet-body .bu{color:var(--bu);font-weight:600}
+  .sheet-body .bk{color:var(--bk);font-weight:600}
+  .sheet-body code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:rgba(255,255,255,.05);border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px;color:var(--ink)}
+
+  @media (prefers-reduced-motion:reduce){
+    .card{transition:none}
+    .hint .dot{animation:none}
+    .sheet,.sheet-bd{transition:none}
+  }
+  @media (max-height:680px){
+    .brand h1{font-size:20px}.brand .sub{display:none}
+    .face{padding:18px 16px 14px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="head">
+    <a class="backlink" href="index.html">← Toolbench</a>
+    <div class="eyebrow">Field Drill · The Toolbox</div>
+    <div class="deckseg" role="tablist" aria-label="Choose deck">
+      <button class="deckbtn" data-deck="0" role="tab" aria-selected="true">Sensors</button>
+      <button class="deckbtn" data-deck="1" role="tab" aria-selected="false">Signals</button>
+      <button class="deckbtn" data-deck="2" role="tab" aria-selected="false">Safety</button>
+      <button class="deckbtn" data-deck="3" role="tab" aria-selected="false">Drives</button>
+      <button class="deckbtn" data-deck="4" role="tab" aria-selected="false">Isolate</button>
+    </div>
+    <div class="deckmeta"><span id="deckRef">ELEC-REF-016</span><span class="dot-sep">·</span><span id="deckSub">PNP / NPN</span></div>
+  </header>
+
+  <nav class="chips" id="chips" aria-label="Filter by category"></nav>
+  <div class="strip" id="strip" aria-hidden="true"></div>
+
+  <div class="stage">
+    <div class="card" id="card" role="button" tabindex="0" aria-live="polite" aria-label="Flash card, tap to reveal answer">
+      <div class="face front">
+        <div class="meta"><span class="cat" id="fcat"></span><span class="num" id="fnum"></span></div>
+        <div class="qwrap"><div class="q" id="q"></div></div>
+        <div class="hint"><span class="dot"></span> Tap to reveal</div>
+      </div>
+      <div class="face back">
+        <div class="meta"><span class="cat" id="bcat"></span><span class="num" id="bnum"></span></div>
+        <div class="backscroll">
+          <div class="alabel">Answer</div>
+          <div class="a" id="a"></div>
+          <div id="fig"></div>
+          <div id="why"></div>
+          <button class="morebtn" id="moreBtn" type="button">
+            <span>＋ Learn more</span>
+            <small>the full picture</small>
+          </button>
+        </div>
+        <div class="recall">
+          <button class="rbtn got" id="btnGot" type="button">✓ Got it</button>
+          <button class="rbtn rev" id="btnRev" type="button">↻ Review</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="nav" id="prev" aria-label="Previous card">‹</button>
+    <button class="flipbtn" id="flip" type="button">Flip<small>SPACE</small></button>
+    <button class="nav" id="next" aria-label="Next card">›</button>
+  </div>
+
+  <div class="foot">
+    <div class="score">
+      <span class="g">Got it <b id="sGot">0</b></span>
+      <span class="r">Review <b id="sRev">0</b></span>
+      <span>Card <b id="sPos">–</b></span>
+    </div>
+    <div class="tools">
+      <button class="tool" id="reviewOnly" aria-pressed="false">Review&nbsp;set</button>
+      <button class="tool" id="shuffle">Shuffle</button>
+      <button class="tool" id="reset">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="sheetWrap" aria-hidden="true">
+  <div class="sheet-bd" id="sheetBd"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-grab"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-cat" id="sheetCat"></div>
+        <div class="sheet-title" id="sheetTitle"></div>
+      </div>
+      <button class="sheet-x" id="sheetX" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- data ---------------- */
+const DECKS = [
+{ name:"Sensor Wiring", sub:"PNP / NPN · sourcing & sinking", ref:"ELEC-REF-016",
+  cats:{
+  FUNDAMENTALS:{key:"FUNDAMENTALS", color:"#C0803F"},
+  WIRING:{key:"WIRING", color:"#3B8CD1"},
+  "PLC SIDE":{key:"PLC SIDE", color:"#8E6FD1"},
+  DIAGNOSTICS:{key:"DIAGNOSTICS", color:"#F0B429"}
+  },
+  cards:[
+  { cat:"FUNDAMENTALS",
+    q:`PNP output — does it source or sink?`,
+    a:`Sources. It switches the signal line up to <b>+24V</b> when active — current flows <span class="bn">out</span> of the output, through the load, down to 0V.`,
+    why:{l:"Hook", t:"PNP Pushes Positive. The transistor connects the signal line to +24V, so the output is the current source."} },
+
+  { cat:"FUNDAMENTALS",
+    q:`NPN output — does it source or sink?`,
+    a:`Sinks. It switches the signal line down to <b>0V</b> when active — current flows from +24V, through the load, and <span class="bu">into</span> the output.`,
+    why:{l:"Hook", t:"NPN pulls it down to 0V. The transistor connects the signal line to 0V, so the output is the current sink."} },
+
+  { cat:"WIRING",
+    q:`3-wire DC sensor — what are the standard wire colours?`,
+    a:`<span class="bn">Brown</span> = +24V (L+).  <span class="bu">Blue</span> = 0V (L−).  <span class="bk">Black</span> = output / signal.  (White = 2nd output on a 4-wire.)`,
+    wire:"colours",
+    why:{l:"Note", t:"IEC 60947-5-2 — identical for PNP and NPN. Only the side the load sits on changes; the supply wires never move."} },
+
+  { cat:"WIRING",
+    q:`PNP sensor — which side does the load sit?`,
+    a:`Between <span class="bk">Black</span> (output) and <span class="bu">Blue</span> (0V). The sensor sources +24V into the top of the load; the load returns to 0V.`,
+    wire:"pnp",
+    why:{l:"Why", t:"The sensor sits between +24V and the signal node. Turn it on and it pushes +24V down onto the load."} },
+
+  { cat:"WIRING",
+    q:`NPN sensor — which side does the load sit?`,
+    a:`Between <span class="bn">Brown</span> (+24V) and <span class="bk">Black</span> (output). The load hangs off +24V; the sensor sinks the bottom of it to 0V.`,
+    wire:"npn",
+    why:{l:"Why", t:"The sensor sits between the signal node and 0V. Turn it on and it pulls the bottom of the load down to 0V, so current flows."} },
+
+  { cat:"PLC SIDE",
+    q:`Feeding PNP sensors into a PLC — what must the input common be tied to?`,
+    a:`<b>0V (M).</b> The input card has to <b>sink</b>, because a PNP sensor sources +24V into it. Wrong rail and nothing reads.`,
+    why:{l:"Rule", t:"Sensor and input must be opposite-handed: a sourcing sensor needs a sinking input. PNP sensor → common on 0V."} },
+
+  { cat:"PLC SIDE",
+    q:`Feeding NPN sensors into a PLC — what must the input common be tied to?`,
+    a:`<b>+24V.</b> The input card has to <b>source</b>, because an NPN sensor sinks it down to 0V.`,
+    why:{l:"Rule", t:"Opposite-handed again: a sinking sensor needs a sourcing input. NPN sensor → common on +24V."} },
+
+  { cat:"PLC SIDE",
+    q:`The two questions to answer before wiring any sensor to a PLC?`,
+    a:`1) Is the sensor <b>PNP or NPN</b>?  2) Is the input card set to <b>sink or source</b> (common on 0V or +24V)?  They must be opposite-handed.`,
+    why:{l:"Method", t:"Get these two straight first and the wiring falls out on its own. Most sensor 'faults' are just these two mismatched."} },
+
+  { cat:"DIAGNOSTICS",
+    q:`Sensor's own LED is lit but the PLC won't read the input. First check?`,
+    a:`Common / polarity <b>mismatch</b> — the input common is on the wrong rail (PNP sensor into a sourcing input, or the reverse). The sensor's happy; the PLC just can't see it.`,
+    why:{l:"Why", t:"The sensor LED only proves the sensor is powered and switching. It says nothing about whether the PLC input can accept that signal type."} },
+
+  { cat:"DIAGNOSTICS",
+    q:`DMM from output to blue (0V) — PNP readings, off vs on?`,
+    a:`Off ≈ <b>0V</b>.  On ≈ <b>+24V</b>. Clean either way, load in circuit or not.`,
+    why:{l:"Note", t:"A PNP output is driven to a solid level in both states, so it reads true even unloaded. Handy for a quick bench check."} },
+
+  { cat:"DIAGNOSTICS",
+    q:`DMM from output to blue (0V) — NPN readings, off vs on?`,
+    a:`On ≈ <b>0V</b>.  Off ≈ <b>+24V</b> — but only with the load (or PLC input) in circuit. Unloaded, an NPN output floats and reads all sorts.`,
+    why:{l:"Trap", t:"No load means nothing pulls the OFF state up to +24V, so a floating NPN output gives junk readings. Always test it loaded."} },
+
+  { cat:"FUNDAMENTALS",
+    q:`Why is PNP the European default?`,
+    a:`The signal line rests at <b>0V</b>. A wire chafing through to frame or earth reads as <b>OFF</b> — a safe failure. On NPN, that same short to earth looks like a live signal.`,
+    why:{l:"Safety", t:"An earth fault on a PNP line fails to the safe state (off). On NPN it fails to a false ON — the machine sees a signal that isn't real.", danger:true} },
+
+  { cat:"WIRING",
+    q:`NO vs NC — what's the output doing at rest?`,
+    a:`<b>NO</b> (normally open): output OFF until the target's present.  <b>NC</b> (normally closed): output ON until the target's present.`,
+    why:{l:"Note", t:"Independent of PNP/NPN — you can have any combination. A sensor can be PNP-NO, PNP-NC, NPN-NO or NPN-NC."} },
+
+  { cat:"WIRING",
+    q:`4-wire sensor — what's the white wire for?`,
+    a:`The <b>second output</b>. Usually the complement: if black is NO, white is NC. One sensor gives you both switching states.`,
+    why:{l:"Note", t:"The pairing isn't guaranteed — some use the 4th wire differently. Always confirm on the datasheet before you rely on it."} },
+
+  { cat:"DIAGNOSTICS",
+    q:`You've got a PNP sensor but the panel's wired for NPN inputs. Fix on the bench?`,
+    a:`You <b>can't</b> just swap the sensor's wires — the transistor type is fixed. Either move the input card's common to 0V (make it sink), or fit an interposing relay / signal converter.`,
+    why:{l:"Why", t:"PNP vs NPN is set by the sensor's output stage, not the wiring. The clean answer is fitting the correct sensor type."} }
+  ],
+  more:[
+// 0 PNP source/sink
+`<h4>What's inside</h4><p>A PNP sensor's output stage is a PNP transistor with its emitter sat on <span class="bn">+24V</span>. Detect a target and the transistor turns on, connecting the <span class="bk">black</span> signal line to +24V. So the sensor <b>sources</b> current: conventional current flows out of the black wire, through the load, and down to <span class="bu">0V</span>.</p>
+<h4>Why it matters</h4><p>Because the output is driven to +24V, the load must return to 0V to complete the circuit. That's the whole reason a PNP load sits on the 0V side.</p>
+<h4>At rest</h4><p>De-energised, the black line is pulled toward 0V through the load, so a switched-off PNP output measures near <code>0V</code>. Clean and predictable — which is what makes PNP easy to bench-test.</p>`,
+// 1 NPN source/sink
+`<h4>What's inside</h4><p>An NPN output stage is an NPN transistor with its emitter on <span class="bu">0V</span>. Detect a target and it turns on, connecting the <span class="bk">black</span> line down to 0V. The sensor <b>sinks</b> current: the +24V supply sources it, current runs through the load and drains into the black wire to 0V.</p>
+<h4>Why it matters</h4><p>The load has to be referenced to <span class="bn">+24V</span> so there's a potential to drive current down through it when the sensor pulls low.</p>
+<h4>The catch</h4><p>An NPN output is effectively open-collector. Switched off, it doesn't drive anything — the line only rises toward +24V if a load (or pull-up) is present. No load and it floats, which is why an unloaded NPN output reads unpredictably on a meter.</p>`,
+// 2 wire colours
+`<h4>The standard</h4><p>IEC 60947-5-2 fixes the DC 3/4-wire colours: <span class="bn">brown = L+ (+24V)</span>, <span class="bu">blue = L− (0V)</span>, <span class="bk">black = main output</span>, white = second output. Any brand off the shelf wires the supply the same way.</p>
+<h4>Colour ≠ type</h4><p>The standard covers colour, not whether the sensor is PNP or NPN — that's separate and printed on the body or datasheet. Same four colours regardless.</p>
+<h4>M12 pinout</h4><p>Most floor wiring is via M12 cordsets, so know the pins: <code>1 = BN</code>, <code>3 = BU</code>, <code>4 = BK</code>, <code>2 = WH</code>. When a cordset's cut back to bare cores, the pin number is how you keep it straight.</p>`,
+// 3 PNP load side
+`<h4>The circuit</h4><p>A PNP output switches to +24V, so the load's far end must sit at 0V to see a voltage. The path is <span class="bn">+24V</span> → sensor → <span class="bk">black</span> → load → <span class="bu">0V</span>.</p>
+<h4>Bench check</h4><p>Meter black-to-blue: off ≈ <code>0V</code>, on ≈ <code>24V</code>. It reads true either way because a PNP output is actively driven high.</p>
+<h4>The PLC parallel</h4><p>Feed a PLC and the input itself <i>is</i> the load — a sinking input provides the internal path to 0V. Get that and the whole PNP-into-PLC picture falls out.</p>`,
+// 4 NPN load side
+`<h4>The circuit</h4><p>An NPN output switches to 0V, so the load's far end must sit at +24V. The path is <span class="bn">+24V</span> → load → <span class="bk">black</span> → sensor → <span class="bu">0V</span>. Turn it on and the sensor pulls black to 0V, so current flows down through the load.</p>
+<h4>The floating trap</h4><p>Switched off, black rises to +24V <b>only through the load</b>. No load fitted and the output floats — meter reads anywhere from a few volts to near 24, drifting. Classic "reads fine but does nothing." Always test an NPN output loaded, or with a pull-up resistor.</p>`,
+// 5 PLC common PNP
+`<h4>Sink vs source at the card</h4><p>A digital input card is sinking or sourcing depending on where you tie the input common (labelled <code>1M</code>, <code>COM</code>, etc.). A PNP sensor sources +24V into the terminal, so the card must <b>sink</b> that current — common goes to <span class="bu">0V</span>.</p>
+<h4>Current path</h4><p>Sensor sources +24V → into the input terminal → through the input opto/resistor → out the common → to 0V. Tie the common to the wrong rail and there's no return path, so the channel never energises.</p>
+<h4>On an S7-1200</h4><p>DI common (e.g. 1M) to 0V makes the inputs accept PNP sensors — the standard European setup. Some cards are fixed, some switchable; always confirm before wiring a batch.</p>`,
+// 6 PLC common NPN
+`<h4>The mirror image</h4><p>An NPN sensor sinks to 0V, so the input has to <b>source</b> current out to it — common goes to <span class="bn">+24V</span>.</p>
+<h4>Current path</h4><p>+24V from the common → through the input circuit → out the terminal → into the <span class="bk">black</span> wire → sensor sinks it to 0V. Common on 0V here and nothing flows.</p>
+<h4>Watch for</h4><p>NPN is more common on Japanese/Asian machinery. Mixing an NPN sensor onto a card commoned for PNP (or vice versa) is the single most frequent "it won't read" call. Some newer modules auto-detect type — but don't assume; check.</p>`,
+// 7 two questions
+`<h4>A two-body problem</h4><p>Every sensor-to-PLC link needs the sensor's output type and the input's polarity to be <b>complementary</b> — one sources, the other sinks. If both try to source, or both sink, there's no current path and the input never sees a signal.</p>
+<h4>Why it's the method</h4><p>When a new sensor won't read, you don't start swapping wires. You confirm two things: (1) sensor type, from the marking or datasheet; (2) how the input common is tied. Around nine in ten of these faults resolve right there.</p>
+<h4>Everything else is secondary</h4><p>Wire colours, NO/NC, cable length — all matter, but they're downstream of getting the sink/source handshake right first.</p>`,
+// 8 LED lit but PLC won't read
+`<h4>What the LED actually tells you</h4><p>The output LED means the sensor is powered and its output transistor has switched — i.e. it's detecting. It says <b>nothing</b> about whether the downstream circuit is complete.</p>
+<h4>The usual cause</h4><p>Wrong common on the input card. The sensor switches happily (LED on) but no current can pass into or out of the PLC input, so the channel stays dark. Meter the input terminal to confirm the level is actually arriving.</p>
+<h4>Divide and conquer</h4><p>LED on, PLC off → suspect polarity/common mismatch first. LED off too → different half of the problem: sensor power, target detection, or the sensor itself. The LED cleanly splits the fault in two.</p>`,
+// 9 DMM PNP
+`<h4>Push-type output</h4><p>PNP outputs actively drive the line. On → transistor pulls it to +24V. Off → not driven high, and any load pulls it to 0V. Both states are firmly defined, so you get a trustworthy reading even lightly loaded.</p>
+<h4>Expected values</h4><p>Off ≈ <code>0–1V</code>, on ≈ <code>23–24V</code> (a volt or so dropped across the transistor).</p>
+<h4>Quick rig</h4><p>Brown/blue to a 24V bench PSU, meter black-to-blue, wave a target past the face and watch it swing <code>0 ↔ 24</code>. Fastest confidence check there is.</p>`,
+// 10 DMM NPN
+`<h4>Pull-type / open collector</h4><p>NPN outputs only pull down. On → line to 0V (reads ~0V). Off → transistor open, and the line rises to +24V <b>only if something pulls it up</b> — the load or the PLC input.</p>
+<h4>Why unloaded reads junk</h4><p>With nothing pulling it up, an off NPN output floats. A high-impedance meter then reads anything from a couple of volts to near 24, drifting as you watch. Fit the load (or a pull-up) before you trust the reading.</p>
+<h4>Expected values (loaded)</h4><p>On ≈ <code>0–1V</code>, off ≈ <code>23–24V</code>. This asymmetry versus PNP is exactly why PNP is the friendlier one to bench-test.</p>`,
+// 11 why PNP European default
+`<h4>The earth-fault case</h4><p>Picture the signal wire chafing through to the machine frame, which is bonded to 0V.</p>
+<p><b>PNP:</b> the line rests near 0V and only goes high when active. A short to earth just ties it to 0V — the <b>off</b> state. Safe: the machine sees no phantom signal.</p>
+<p><b>NPN:</b> the line rests high and drops when active. A short to earth pulls it to 0V — which looks exactly like a genuine <b>on</b>. A wiring fault can now command an unintended action.</p>
+<h4>The upshot</h4><p>Positive-switching (PNP) fails toward the safe state on the most common wiring fault, so IEC-region industry standardised on it. It's one of several reasons — but the fail-safe argument is the big one.</p>`,
+// 12 NO vs NC
+`<h4>Two independent axes</h4><p>NO/NC is the resting state (target absent); PNP/NPN is how it switches. They're separate, so all four combinations exist: PNP-NO, PNP-NC, NPN-NO, NPN-NC.</p>
+<h4>When to pick NC</h4><p>NC (active at rest, drops on detection) is used for fail-safe and guarding logic: a broken wire or dead sensor de-energises the output, which reads as "target lost / fault." If loss-of-signal <b>should</b> be the alarm or safe condition, NC gives you that for free.</p>
+<h4>Default</h4><p>NO is the everyday choice — output activates when something's there. Most general detection uses it.</p>`,
+// 13 4-wire white
+`<h4>Two outputs</h4><p>A 4-wire DC sensor gives outputs on <span class="bk">black (pin 4)</span> and white (pin 2). Most often they're complementary — black = NO, white = NC — so one sensor feeds two inputs or logic that needs both states.</p>
+<h4>Don't assume</h4><p>It isn't universal. White can instead be a second independent output, a diagnostic/alarm line, an IO-Link/analog channel, or a light/dark-on select. The datasheet pin table is the only authority.</p>
+<h4>Polarity note</h4><p>On a PNP 4-wire, <b>both</b> outputs are PNP. "Complementary" refers to NO vs NC — not to the output polarity, which stays the same across both wires.</p>`,
+// 14 PNP sensor into NPN panel
+`<h4>Why you can't rewire it</h4><p>PNP vs NPN is fixed by the output transistor. No swap of <span class="bn">BN</span>/<span class="bu">BU</span>/<span class="bk">BK</span> turns a sourcing output into a sinking one — the silicon decides, not the terminals.</p>
+<h4>Three ways out</h4><p><b>1 · Reconfigure the input</b> — move that channel's common to 0V so it sinks. Works if the card's switchable and the group isn't shared with NPN sensors you can't move.</p>
+<p><b>2 · Interpose</b> — drive a small relay or signal converter from the PNP output and take its dry contact into the NPN-expecting input.</p>
+<p><b>3 · Fit the right part</b> — the correct sensor type. Cleanest, and what you'd specify going forward.</p>
+<h4>Shared-common warning</h4><p>You can't run PNP and NPN sensors on the same commoned input group — the common can only sit on one rail.</p>`
+  ] },
+{ name:"Signal Types", sub:"IO-Link · 4–20 mA analog", ref:"ELEC-REF-017",
+  cats:{
+  "4–20 mA":{key:"4–20 mA", color:"#E2953C"},
+  "IO-LINK":{key:"IO-LINK", color:"#35B0A7"}
+  },
+  cards:[
+  { cat:"4–20 mA",
+    q:`Why 4–20 mA and not 0–20 mA?`,
+    a:`<b>Live zero.</b> 4 mA = 0% of scale, so <b>0 mA means a fault</b> — broken wire or dead transmitter — told apart from a genuine 0% reading.`,
+    wire:"livezero",
+    why:{l:"Note", t:`The offset gives you fault detection for free: any real measurement sits in 4–20 mA, so anything below that can only be a failure.`} },
+
+  { cat:"4–20 mA",
+    q:`Why a current loop instead of 0–10 V?`,
+    a:`In a series loop the <b>current is identical at every point</b>, so cable resistance and length don't change the reading. A 0–10 V signal sags over distance and picks up noise.`,
+    why:{l:"Why", t:`Voltage drops across long cable and terminal resistance; current doesn't. That's why 4–20 mA runs hundreds of metres on cheap cable and still reads true.`} },
+
+  { cat:"4–20 mA",
+    q:`2-wire (loop-powered) transmitter — how does it work?`,
+    a:`The <b>same two wires carry power and signal</b>. The transmitter draws its supply from the loop and regulates its own current draw between <span class="bn">4</span> and <span class="bn">20 mA</span> to encode the measurement.`,
+    wire:"loop",
+    why:{l:"Why", t:`It's a variable current sink sitting in the loop. Only two wires to pull — the reason 2-wire transmitters dominate field instrumentation.`} },
+
+  { cat:"4–20 mA",
+    q:`How does the PLC actually read the current?`,
+    a:`A precision <b>sense resistor</b> (typically 250 Ω) turns loop current into a voltage the ADC reads: 4 mA → 1 V, 20 mA → 5 V.`,
+    why:{l:"Maths", t:`250 Ω is chosen because 4–20 mA across it gives a clean 1–5 V — a standard ADC input range. Some cards use 100 Ω or 500 Ω; the principle is the same.`} },
+
+  { cat:"4–20 mA",
+    q:`Convert mA to engineering units?`,
+    a:`Linear: <b>value = min + (mA − 4) / 16 × (max − min)</b>.  e.g. a 0–10 bar sensor reading 12 mA → (12−4)/16 × 10 = <b>5 bar</b>.`,
+    why:{l:"Method", t:`The span is 16 mA (20 minus 4). Find how far into that span you are, apply the same fraction to the engineering range. The PLC's analog scaling block does exactly this.`} },
+
+  { cat:"4–20 mA",
+    q:`NAMUR NE43 — what do ≤3.6 mA or ≥21 mA mean?`,
+    a:`<b>Fault signalling.</b> Values outside 4–20 mA flag sensor failure or a wire break, kept separate from the live measurement band so the PLC can tell a fault from a real reading.`,
+    why:{l:"Note", t:`NE43 carves out sub-3.6 mA and above-21 mA as diagnostic zones. A transmitter can deliberately drive there to say 'I've failed' — far better than freezing at a plausible value.`} },
+
+  { cat:"4–20 mA",
+    q:`Loop won't reach 20 mA at full scale — likely cause?`,
+    a:`Too much <b>loop resistance (burden)</b>. Max load = (V_supply − transmitter dropout) / 20 mA. Long cable plus several 250 Ω drops exceeds it and the transmitter runs out of voltage to push 20 mA.`,
+    why:{l:"Why", t:`The transmitter needs a minimum voltage across itself to regulate. Everything else in the loop steals from the supply; at 20 mA the drops are biggest, so the top of the range starves first.`} },
+
+  { cat:"4–20 mA",
+    q:`Fault-finding a loop with a DMM — the right method?`,
+    a:`Break the loop and put the meter <b>in series</b> (mA range) to read actual current, or measure the volts across the <b>250 Ω</b> sense resistor. In V-mode across the loop you read the supply, not the signal.`,
+    why:{l:"Trap", t:`A meter in mA mode is a near-short — put it across a live loop in parallel and you dump the current. Series for current, or read the sense resistor voltage and divide.`} },
+
+  { cat:"4–20 mA",
+    q:`Analog signal integrity near drives — the grounding rule?`,
+    a:`Use <b>shielded cable</b>, and ground the shield at <b>one end only</b> (usually the panel/PLC end) to avoid a ground loop. 4–20 mA is robust, but analog still benefits from screening around VFDs.`,
+    why:{l:"Why", t:`Grounding a shield at both ends lets circulating currents flow through it, injecting noise. One-end grounding drains interference without creating a loop.`} },
+
+  { cat:"IO-LINK",
+    q:`What is IO-Link, in one line?`,
+    a:`<b>Point-to-point digital comms</b> over the standard 3-wire sensor cable (IEC 61131-9). Not a fieldbus — one device per master port.`,
+    why:{l:"Note", t:`Think of it as a serial link that rides the existing sensor wiring. It sits below the fieldbus: devices talk IO-Link to a master, the master talks PROFINET/EtherNet-IP to the PLC.`} },
+
+  { cat:"IO-LINK",
+    q:`Which wire carries the IO-Link data?`,
+    a:`Pin 4 / <span class="bk">black</span> — the <b>C/Q</b> line. The wire that was the switching output becomes a bidirectional serial link. <span class="bn">Brown</span> and <span class="bu">blue</span> still just power the device.`,
+    wire:"iolink",
+    why:{l:"Why", t:`C/Q = Communication / Qualified. In IO-Link mode it carries serial data both ways; in standard mode the same pin reverts to an ordinary switching output.`} },
+
+  { cat:"IO-LINK",
+    q:`SIO vs SDCI mode — what's the difference?`,
+    a:`A port runs either <b>SIO</b> (Standard IO — pin 4 is a plain switching input) or <b>SDCI</b> (IO-Link communication). A device falls back to SIO if the master isn't speaking IO-Link.`,
+    why:{l:"Note", t:`SDCI = Single-drop Digital Communication Interface, the formal name for IO-Link. Backward compatibility means an IO-Link sensor still works as a dumb switch on a normal DI.`} },
+
+  { cat:"IO-LINK",
+    q:`Cable and distance limits for IO-Link?`,
+    a:`Standard <b>unshielded 3-wire</b> M12, up to <b>20 m</b>. No special shielded cable needed — a key advantage over running a fieldbus drop out to the sensor.`,
+    why:{l:"Why", t:`Keeping the physical layer as ordinary sensor cable is the whole point: existing wiring, existing connectors, no new cable spec on the floor.`} },
+
+  { cat:"IO-LINK",
+    q:`What does IO-Link give you over a plain on/off sensor?`,
+    a:`Remote <b>parameter read/write</b>, rich <b>diagnostics</b>, <b>digital process values</b> (no analog conversion), device identification, and <b>auto parameter restore</b> on device swap.`,
+    why:{l:"Why", t:`A DIO sensor tells you one bit: present or not. IO-Link turns the same sensor into a two-way device you can configure, interrogate and monitor for health.`} },
+
+  { cat:"IO-LINK",
+    q:`Data Storage — why does maintenance love it?`,
+    a:`The <b>master keeps the device's parameter set</b>. Swap a failed sensor for a compatible one and the master <b>auto-reloads its settings</b> — no laptop, no reconfiguration, minimal downtime.`,
+    why:{l:"Maintenance", t:`This is the standout feature on the floor: a 2 a.m. sensor swap becomes plug-and-go instead of hunting for the config file. The new device is parameterised before the line restarts.`} },
+
+  { cat:"IO-LINK",
+    q:`What's an IODD file?`,
+    a:`<b>IO Device Description</b> — the device's machine-readable datasheet for the engineering tool: parameters, process data, diagnostics and identity. You import it to configure the device.`,
+    why:{l:"Note", t:`One IODD per device type, supplied by the maker. The master's tool reads it to know what settings the device exposes and how to display its process data.`} },
+
+  { cat:"IO-LINK",
+    q:`Where does the IO-Link master sit?`,
+    a:`It's the <b>gateway</b>: IO-Link (point-to-point) down to each device on one side, fieldbus (<b>PROFINET / EtherNet-IP</b>) up to the PLC on the other.`,
+    why:{l:"Why", t:`Devices never touch the fieldbus directly. The master aggregates several IO-Link ports and presents them to the PLC as one fieldbus node.`} },
+
+  { cat:"IO-LINK",
+    q:`Port Class A vs Class B?`,
+    a:`<b>Class A</b>: pins 2/5 aren't guaranteed power (pin 2 optional DI/DO). <b>Class B</b>: adds an <b>isolated auxiliary supply</b> on pins 2/5 for power-hungry actuators. Match the port to what the device needs.`,
+    why:{l:"Note", t:`Most sensors are Class A. Class B exists because some actuators draw more than the standard port can safely deliver, so they get their own isolated supply pair.`} }
+  ],
+  more:[
+// 0 live zero
+`<h4>The idea</h4><p>Scale the signal so the bottom of the measuring range starts at <b>4 mA</b>, not zero. 4 mA = 0% of the process value, 20 mA = 100%. The 0–4 mA band is deliberately left unused.</p>
+<h4>Why it's clever</h4><p>Now zero current can only mean one thing: something's broken. A snapped wire, a dead transmitter or a lost supply all read <code>0 mA</code>, which is impossible for a healthy sensor. A genuine 0% still sits at a live 4 mA.</p>
+<h4>On the floor</h4><p>A 0–10 V sensor reading 0 V is ambiguous — is the tank empty or the cable cut? A 4–20 mA loop answers that for you without any extra wiring.</p>`,
+// 1 current vs voltage
+`<h4>The physics</h4><p>In a series circuit the current is the same everywhere — Kirchhoff's current law. So whatever resistance the cable, terminals and connectors add, the loop current the PLC sees equals the current the transmitter sends.</p>
+<h4>Why voltage loses</h4><p>A 0–10 V signal is divided down by cable resistance and loading. Over a long run the receiver reads low, and the high-impedance line picks up electrical noise from nearby drives and contactors.</p>
+<h4>Practical upshot</h4><p>4–20 mA happily runs hundreds of metres on ordinary cable with good noise immunity. It's the default for field instrumentation for exactly this reason.</p>`,
+// 2 two-wire transmitter
+`<h4>Power and signal on two wires</h4><p>A 2-wire transmitter sits in the loop like a variable resistor. It takes its own supply from the loop current and regulates that current between <span class="bn">4 and 20 mA</span> to represent the measurement.</p>
+<h4>The constraint</h4><p>Because it must always draw at least 4 mA to power itself, it can never fully switch off — which is also why 4 mA is the live zero. It needs a minimum voltage across it (dropout) to keep regulating.</p>
+<h4>Why it's popular</h4><p>Two conductors carry everything. Less cable, fewer terminals, simpler installation — the reason 2-wire dominates pressure, level and temperature transmitters.</p>`,
+// 3 sense resistor
+`<h4>How current becomes a number</h4><p>The analog input can't read current directly — its ADC reads voltage. So a precision resistor in the loop converts current to voltage by Ohm's law: <code>V = I × R</code>.</p>
+<h4>Why 250 Ω</h4><p>At 250 Ω, 4 mA gives 1 V and 20 mA gives 5 V — a tidy 1–5 V that suits a standard ADC range. Other values (100 Ω, 500 Ω) are used where a different voltage span is wanted.</p>
+<h4>Where it lives</h4><p>On many cards the sense resistor is built in; on some you fit an external one, or select current vs voltage mode by jumper/DIP. Know which, because a missing or wrong resistor throws the scaling out.</p>`,
+// 4 scaling maths
+`<h4>The formula</h4><p><code>value = min + (mA − 4) / 16 × (max − min)</code>. The 16 is the span in mA (20 − 4). Work out how far into the 4–20 band you are, then apply that same fraction to the engineering range.</p>
+<h4>Worked example</h4><p>0–10 bar transmitter, reading 12 mA: (12 − 4) / 16 = 0.5, so 0.5 × 10 = <b>5 bar</b>. At 4 mA you'd get 0 bar, at 20 mA, 10 bar.</p>
+<h4>In the PLC</h4><p>The analog scaling block (Siemens NORM_X / SCALE_X, or equivalent) does this for you — but knowing the maths lets you sanity-check a suspicious reading by hand.</p>`,
+// 5 NAMUR NE43
+`<h4>Diagnostic zones</h4><p>NAMUR recommendation NE43 sets aside the current outside the measuring band for fault signalling: roughly <b>≤3.6 mA</b> (under-range/fault) and <b>≥21 mA</b> (over-range/fault), leaving 3.8–20.5 mA as the valid measurement window.</p>
+<h4>Why it beats freezing</h4><p>A transmitter that fails and holds its last plausible value is dangerous — nobody knows it's lying. One that drives to a defined fault current openly declares the failure, and the PLC can alarm on it.</p>
+<h4>Setup</h4><p>You configure the input card and transmitter to agree on the fault direction (downscale or upscale burnout). Get them consistent or a real fault might land inside the valid band.</p>`,
+// 6 burden resistance
+`<h4>The voltage budget</h4><p>The supply voltage has to cover: the transmitter's minimum operating voltage (dropout) plus the drop across everything else in the loop at full current. Max loop resistance = (V_supply − V_dropout) / 20 mA.</p>
+<h4>Why the top end starves first</h4><p>Voltage drops are largest at 20 mA. If the loop resistance is too high, the transmitter can't muster the voltage to push a full 20 mA, so the signal clips or reads low at the top while the bottom looks fine.</p>
+<h4>What eats the budget</h4><p>Long cable runs, multiple series loads (several 250 Ω inputs, an indicator, a barrier), and undersized supplies. Add them up before committing a long run.</p>`,
+// 7 DMM loop
+`<h4>Two safe methods</h4><p><b>In series:</b> break the loop, set the meter to mA, and let the loop current flow through it — that's the true current. <b>Across the sense resistor:</b> read the voltage over the known 250 Ω and divide by it to get current.</p>
+<h4>The classic mistake</h4><p>Putting the meter in voltage mode across the whole loop reads the <b>supply</b>, not the signal. And putting it in mA mode <b>in parallel</b> is a near short-circuit — it dumps the loop current and skews everything.</p>
+<h4>Quick reasoning</h4><p>4 mA across 250 Ω = 1 V, 20 mA = 5 V. So a healthy loop measured across the sense resistor swings 1–5 V; anything outside that points to a fault or a scaling problem.</p>`,
+// 8 shielding
+`<h4>Why one end only</h4><p>A shield grounded at both ends can carry circulating current if the two grounds sit at slightly different potentials — a ground loop. That current induces noise into the very signal the shield is meant to protect.</p>
+<h4>The rule</h4><p>Ground the shield at a single point, normally the panel/PLC end, and leave the field end floating (insulated). The shield still drains interference to ground, but no loop can form.</p>
+<h4>Around drives</h4><p>On an extrusion line the VFDs are the noise source. Keep analog runs away from motor cables, cross them at right angles if you must, and don't share glands with power. 4–20 mA is tough, but good practice keeps marginal readings clean.</p>`,
+// 9 what is IO-Link
+`<h4>What it is</h4><p>IO-Link (IEC 61131-9) is a short-range, point-to-point <b>digital</b> communication link that runs over ordinary 3-wire sensor cable. One device per master port — it is explicitly <i>not</i> a bus with multiple drops.</p>
+<h4>Where it sits</h4><p>Below the fieldbus. Devices speak IO-Link to a master; the master speaks PROFINET, EtherNet/IP or similar up to the PLC. It extends intelligence right down to the individual sensor without pulling fieldbus cable to every one.</p>
+<h4>Why it caught on</h4><p>Same wiring you already use, but the sensor becomes configurable and self-diagnosing. It's an upgrade to the last metre, not a new network to design.</p>`,
+// 10 which wire
+`<h4>The C/Q line</h4><p>IO-Link data rides on <span class="bk">pin 4 (black)</span> — the C/Q, or Communication/Qualified, line. In IO-Link mode it's a bidirectional serial link; in standard mode the same pin is just an on/off switching output.</p>
+<h4>Power unchanged</h4><p><span class="bn">Brown</span> stays +24V and <span class="bu">blue</span> stays 0V — they simply power the device. Only the signal wire changes job.</p>
+<h4>Signalling</h4><p>Communication is 24 V pulse-based at set baud rates (COM1 4.8k, COM2 38.4k, COM3 230.4k). It's robust, low-speed serial — chosen for noise immunity on factory cable, not raw throughput.</p>`,
+// 11 SIO vs SDCI
+`<h4>Two modes for one port</h4><p><b>SIO</b> (Standard IO): pin 4 behaves as a normal switching DI/DO — the sensor acts like any dumb 3-wire device. <b>SDCI</b> (Single-drop Digital Communication Interface, i.e. IO-Link): pin 4 carries serial comms.</p>
+<h4>Graceful fallback</h4><p>Plug an IO-Link device into a port that isn't running IO-Link and it drops to SIO and still works as a switch. That backward compatibility is why you can roll IO-Link in gradually.</p>
+<h4>Wake-up</h4><p>The master starts a device with a wake-up pulse to move it from SIO into communication. If the master isn't configured for IO-Link on that port, no wake-up, and the device stays a plain switch.</p>`,
+// 12 cable limits
+`<h4>Ordinary cable</h4><p>IO-Link runs on standard <b>unshielded 3-wire</b> sensor cable with M12 connectors — the same stuff already on the machine. No special impedance-controlled or shielded cable is required.</p>
+<h4>20 metre limit</h4><p>Maximum device-to-master length is 20 m. It's a deliberately short, local link — intelligence at the last metre, not a plant-wide network. For longer distances you go up to the fieldbus at the master.</p>
+<h4>Why it matters</h4><p>No new cable spec, no shielding discipline, no bus terminators to get wrong. The low physical-layer cost is a big part of why IO-Link spread so fast.</p>`,
+// 13 what IO-Link gives you
+`<h4>From one bit to a conversation</h4><p>A standard DIO sensor gives you a single bit: target present or not. IO-Link turns that same sensor into a two-way device.</p>
+<h4>What you gain</h4><p><b>Parameters:</b> set switch points, timers, modes remotely. <b>Process data:</b> the actual measured value digitally, no 4–20 mA conversion or scaling error. <b>Diagnostics:</b> contamination, temperature, short-circuit, supply warnings. <b>Identity:</b> vendor, type, serial for stock control.</p>
+<h4>Net effect</h4><p>Commissioning, monitoring and fault-finding all move onto the network. You configure and interrogate sensors from the controller instead of at the sensor with a screwdriver.</p>`,
+// 14 data storage
+`<h4>The feature</h4><p>The master holds a copy of each device's parameter set. Configure Data Storage on and any parameter change is mirrored up to the master.</p>
+<h4>Device replacement</h4><p>Swap a failed sensor for a compatible one and the master automatically pushes the stored parameters down to the new device. It's parameterised and running before the line restarts — no laptop, no config file hunt, no specialist.</p>
+<h4>Why it's the headline</h4><p>For maintenance this is the single biggest win. A middle-of-the-night sensor change stops being a reconfiguration job and becomes a plug-and-go swap — directly cutting mean time to repair.</p>`,
+// 15 IODD
+`<h4>The device's datasheet, for software</h4><p>The IODD (IO Device Description) is an XML file, supplied by the manufacturer, that describes everything the engineering tool needs: available parameters, the process-data structure, diagnostic events, and device identity.</p>
+<h4>How it's used</h4><p>You import the IODD into the master's configuration tool. It then knows how to display and set that device's parameters and how to decode its process data — without you reading the manual for every register.</p>
+<h4>One per type</h4><p>There's one IODD per device type, versioned. Keep them with the project files so a future engineer configuring a replacement has the right description to hand.</p>`,
+// 16 master position
+`<h4>The gateway role</h4><p>The IO-Link master has two faces. Downward: several IO-Link ports, each a point-to-point link to one device. Upward: a single fieldbus connection (PROFINET, EtherNet/IP, EtherCAT…) to the PLC.</p>
+<h4>What that buys you</h4><p>Devices never sit on the fieldbus directly. The master aggregates its ports and presents them to the PLC as one node, so you add intelligent sensors without adding fieldbus addresses for each.</p>
+<h4>Practical note</h4><p>Master ports are numbered; the PLC addresses process data by master + port. When you swap or move a device, mind which port it's on — that's how the controller knows who's who.</p>`,
+// 17 class A vs B
+`<h4>The two port classes</h4><p><b>Class A:</b> the common type. Pins 1/3/4 do power and C/Q; pins 2/5 aren't a defined power pair (pin 2 is an optional extra DI/DO). <b>Class B:</b> adds an isolated auxiliary supply on pins 2/5.</p>
+<h4>Why Class B exists</h4><p>Some actuators — valves, grippers, larger outputs — draw more current than the standard port is meant to deliver. Class B gives them a separate, isolated power pair so the comms supply isn't loaded down.</p>
+<h4>Wiring watch-out</h4><p>Class B needs 5-pole cable and a matching device. Put a Class A device on a Class B port and pins 2/5 may be live in ways the sensor doesn't expect — always match the device's stated class.</p>`
+  ] },
+{ name:"Safety Circuits", sub:"e-stops · interlocks · light curtains", ref:"ELEC-REF-018",
+  cats:{
+  "PRINCIPLES":{key:"PRINCIPLES", color:"#4FA96A"},
+  "DEVICES":{key:"DEVICES", color:"#3B8CD1"},
+  "RELAY LOGIC":{key:"RELAY LOGIC", color:"#8E6FD1"},
+  "FAULT-FINDING":{key:"FAULT-FINDING", color:"#F0B429"}
+  },
+  cards:[
+  { cat:"PRINCIPLES",
+    q:`Why are safety circuits dual-channel?`,
+    a:`<b>Redundancy.</b> Two independent channels carry the same safe signal, so a single fault — a welded contact, a broken wire, a channel-to-channel short — can't defeat the function. The healthy channel still trips and the relay sees the mismatch.`,
+    wire:"dualchannel",
+    why:{l:"Principle", t:`A single-channel stop is one fault away from useless. Two channels mean no single failure leaves the machine unable to stop — the foundation of Category 3 and 4.`} },
+
+  { cat:"PRINCIPLES",
+    q:`What is cross-fault monitoring?`,
+    a:`Detecting a <b>short between the two channels</b>. Such a short could bridge past both and hide a fault, so the safety relay watches for it — often with test pulses or split routing — and won't reset or trips if it sees one.`,
+    why:{l:"Why", t:`Redundancy only helps if the channels are truly independent. A channel-to-channel short quietly turns two channels back into one; cross-monitoring catches that before it bites.`} },
+
+  { cat:"PRINCIPLES",
+    q:`What does "fail-safe / de-energise to trip" mean?`,
+    a:`The safe state is the <b>de-energised</b> state. Safety outputs are energised only while running; loss of supply, a broken wire or an opened contact all drop them to safe. A failure must fall toward stopped, never stuck-run.`,
+    why:{l:"Principle", t:`Wiring is arranged so the likeliest faults — breaks, disconnections, power loss — produce a stop, not a phantom run. Never design a safety function that needs power applied to reach safety.`} },
+
+  { cat:"PRINCIPLES",
+    q:`Why are e-stop and interlock contacts NC with positive opening?`,
+    a:`<b>NC</b> so pressing the stop <i>or</i> a broken wire both open the circuit → safe. <b>Positive (direct) opening</b> forces the contact apart mechanically, not by a spring, so it can't weld shut and stay made.`,
+    why:{l:"Standard", t:`Positive opening (IEC 60947-5-1, the arrow-in-a-circle symbol) guarantees the contact is physically driven open. A NO contact would fail dangerous on a broken wire — it would just read 'not pressed'.`} },
+
+  { cat:"PRINCIPLES",
+    q:`What does Performance Level (PL) describe?`,
+    a:`<b>How reliably a safety function performs</b>, from <b>PLa</b> (lowest) to <b>PLe</b> (highest). Under ISO 13849-1 it comes from the architecture (Category), component reliability (MTTFd), diagnostic coverage (DC) and common-cause failures (CCF).`,
+    why:{l:"Note", t:`The required PL (PLr) falls out of the risk assessment — severity, frequency of exposure, possibility of avoidance. You then design a function that achieves at least that PL.`} },
+
+  { cat:"PRINCIPLES",
+    q:`Categories B, 1, 2, 3, 4 (ISO 13849) — what do they describe?`,
+    a:`The <b>architecture</b> of the safety function. B/1: single channel (1 uses well-tried parts). 2: single channel plus periodic testing. 3: dual channel, tolerant of a single fault. 4: dual channel that also resists fault accumulation.`,
+    why:{l:"Watch", t:`Category is structure; PL is reliability — related but not the same. And both differ again from the Stop Categories 0/1/2, which describe how a machine is brought to rest.`} },
+
+  { cat:"DEVICES",
+    q:`Is an e-stop a primary safeguard?`,
+    a:`No — it's a <b>complementary protective measure</b>. It backs up the guards and interlocks for emergencies; it doesn't replace them. It must latch, need a deliberate reset, and never create a new hazard by stopping.`,
+    why:{l:"Note", t:`You can't rely on an e-stop as the main way to make a task safe — people aren't fast enough to react. Primary safety comes from guarding; the e-stop is the last resort.`} },
+
+  { cat:"DEVICES",
+    q:`Why use a coded (RFID/magnetic) guard interlock?`,
+    a:`<b>Defeat resistance.</b> A coded actuator is uniquely paired to its switch, so it can't be fooled with a spare tongue, a magnet or a cable-tie. Uncoded mechanical switches are easy to cheat, which invalidates the guard.`,
+    why:{l:"Why", t:`A guard that's trivial to bypass gives no real protection — and operators will bypass an inconvenient one. Coding raises the effort to defeat it, and it's a rated property (low/high coding level).`} },
+
+  { cat:"DEVICES",
+    q:`When do you need guard locking, not just interlocking?`,
+    a:`When the machine has <b>overrun</b> — it doesn't stop instantly. Guard locking holds the guard shut until the hazard has actually ceased (zero-speed sensed, or a safe time delay), then releases.`,
+    why:{l:"Why", t:`A plain interlock stops the machine when the guard opens, but if the screw or flywheel is still coasting, opening the guard exposes the hazard anyway. Locking keeps people out until it's genuinely safe.`} },
+
+  { cat:"DEVICES",
+    q:`How does a safety light curtain (AOPD) work?`,
+    a:`A transmitter and receiver form a grid of infrared beams. Break any beam and the <b>OSSD outputs switch off</b>, commanding a safe stop. The <b>resolution</b> (finger / hand / body) sets the smallest object it's guaranteed to detect.`,
+    wire:"lightcurtain",
+    why:{l:"Note", t:`Resolution drives the mounting. A curtain only protects the plane it occupies — approach from around, under or over it and it sees nothing, so position and safety distance matter as much as the device.`} },
+
+  { cat:"DEVICES",
+    q:`What are OSSD outputs, and why do they pulse?`,
+    a:`<b>Output Signal Switching Devices</b> — the two safety outputs of a curtain or scanner. They fire brief <b>test pulses</b> (short off-blips) to detect shorts, cross-faults and stuck outputs. The receiving input must tolerate the pulses.`,
+    why:{l:"Why", t:`The microsecond pulses prove each output can still switch off and isn't shorted to 24V or to the other channel. A non-safety input would just see them as noise — they must land on a proper safe input.`} },
+
+  { cat:"DEVICES",
+    q:`Muting vs blanking a light curtain — what's the difference?`,
+    a:`<b>Muting</b>: automatically and temporarily bypassing the curtain for a valid pass (e.g. a pallet), under strict conditions — multiple sensors, correct sequence, time limits. <b>Blanking</b>: ignoring a fixed zone of the field (fixed or floating) for a permanent obstruction.`,
+    why:{l:"Caution", t:`Both deliberately stop the curtain protecting part of its area, so both are tightly governed. Muting must be impossible for a person to trigger; blanking must not open a gap someone can slip through.`} },
+
+  { cat:"RELAY LOGIC",
+    q:`Monitored (manual) vs automatic reset — what's the difference?`,
+    a:`<b>Monitored</b>: needs a deliberate button press, and the relay checks the button's edge so a stuck or shorted reset can't auto-start the machine. <b>Automatic</b>: resets the instant inputs are safe — only allowed where nobody can be in the danger zone.`,
+    why:{l:"Why", t:`Monitored reset stops a jammed button, or a guard simply being reclosed, from restarting the machine on its own. The edge-check is the whole difference between 'reset' and 'start'.`} },
+
+  { cat:"RELAY LOGIC",
+    q:`What is the EDM / feedback loop for?`,
+    a:`<b>External Device Monitoring</b> watches the feedback contacts of the downstream contactors. If a contactor <b>welds</b>, its feedback stays open and the safety relay <b>won't reset</b> — so a stuck power contact is caught before the next start.`,
+    wire:"edm",
+    why:{l:"Why", t:`The safety relay can drop its own outputs, but it can't see the real motor contactors unless you tell it. Routing their force-guided aux contacts back through EDM closes that gap.`} },
+
+  { cat:"RELAY LOGIC",
+    q:`Why must the monitored contactors have force-guided contacts?`,
+    a:`Force-guided (mechanically linked) NO and NC contacts <b>can never be closed at the same time</b>. So the NC feedback contact truly reflects the NO power contact — if the power contact welds shut, the feedback is held open.`,
+    why:{l:"Why", t:`EDM is only trustworthy if the feedback contact can't lie. Ordinary relay contacts can stick independently; force-guided (mirror) contacts are mechanically tied so the feedback always mirrors the real state.`} },
+
+  { cat:"RELAY LOGIC",
+    q:`Typical safety-relay terminal scheme (e.g. Pilz PNOZ)?`,
+    a:`Supply on <b>A1/A2</b>. Channel 1 on <b>S11–S12</b>, channel 2 on <b>S21–S22</b> (your dual-channel e-stop or guard). Reset on <b>S33–S34</b>. Safety outputs <b>13–14, 23–24</b> (NO, force-guided); auxiliary <b>41–42</b>.`,
+    why:{l:"Note", t:`Labels vary by maker and model, but the scheme is universal: power, two input channels, a monitored reset with EDM in the loop, and force-guided output contacts. Always work from the specific device's wiring diagram.`} },
+
+  { cat:"RELAY LOGIC",
+    q:`Stop Categories 0, 1, 2 (IEC 60204-1) — and the trap?`,
+    a:`<b>0</b>: immediate removal of power — uncontrolled stop. <b>1</b>: controlled stop (ramp down) <i>then</i> remove power. <b>2</b>: controlled stop with power maintained. The trap: these are <b>not</b> the ISO 13849 Categories B/1/2/3/4.`,
+    why:{l:"Watch", t:`Stop Category is how the machine comes to rest; ISO 13849 Category is the circuit's fault tolerance. Same word, different standard — a very common mix-up on drawings and in conversation.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`Safety circuit won't reset — systematic first checks?`,
+    a:`Walk the loop: every e-stop <b>released</b>? every guard <b>fully closed</b> (both contacts)? <b>both channels</b> made? <b>EDM/feedback</b> loop closed (no welded contactor)? reset button and wiring sound? Any one open holds the whole function off.`,
+    why:{l:"Method", t:`A safety function is a series chain of 'all must be healthy'. Find the one open element rather than guessing — the relay's diagnostic LEDs usually point at the failing channel or the feedback.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`What is discrepancy time, and what does a discrepancy fault mean?`,
+    a:`The <b>maximum time allowed between the two channels</b> changing state. If one channel switches and the other doesn't follow within the window, the relay flags a <b>discrepancy fault</b> and locks out — pointing at a failing switch, contact or wiring on one channel.`,
+    why:{l:"Why", t:`In a healthy dual-channel device both contacts move almost together. A persistent lag means one channel is sticking or worn — the relay refuses to trust a half-working input.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`Why must you never "bridge out" a safety input to get running?`,
+    a:`Because it <b>defeats the protective function</b> — the machine can no longer stop for that hazard. It's illegal, potentially lethal, and it hides the real fault. Find and fix the open channel instead.`,
+    why:{l:"Safety", t:`A link across a safety input turns a Category 3/4 function into nothing. The pressure to 'just get it running' is exactly when someone gets hurt. Diagnose it — never bypass it.`, danger:true} }
+  ],
+  more:[
+// 0 dual channel
+`<h4>The idea</h4><p>Run the safe signal down two separate paths — two contacts, two wires, two inputs on the relay. In the run state both are made; trip the device and both open.</p>
+<h4>Why two</h4><p>Any single fault — a welded contact, a severed core, a short to 24V on one channel — is survived by the other channel, which still commands the stop. The relay also compares the channels and latches out on the mismatch, so the fault gets found rather than hidden.</p>
+<h4>Where it sits</h4><p>Dual-channel with monitoring is the structural heart of ISO 13849 Category 3 and 4. Single-channel (Cat B/1) has no such backup — one fault and the stop is gone.</p>`,
+// 1 cross-fault
+`<h4>The hidden failure</h4><p>Redundancy assumes the two channels are independent. If a fault shorts channel 1 to channel 2, pressing the device might still leave 24V looping across both — the relay sees 'healthy' when it isn't.</p>
+<h4>How it's caught</h4><p>Safety relays and OSSD devices send offset test pulses down each channel. A cross-short makes one channel's pulse appear on the other; the relay spots the clash and refuses to reset. Split cable routing helps too.</p>
+<h4>On the floor</h4><p>It's why you don't run both channels loose in the same crushed conduit or land them on adjacent terminals with a whisker of stray strand — you're inviting the exact short the system is built to detect.</p>`,
+// 2 de-energise
+`<h4>Safe = off</h4><p>Design the circuit so removing energy reaches the safe state. Safety outputs hold in only while everything is healthy; the moment supply, a wire or a contact fails, they drop and the machine stops.</p>
+<h4>Why this way round</h4><p>The common failures in the field are opens: broken conductors, loose terminals, lost supply, corroded contacts. All of those must land you in 'stopped'. A circuit that needs power to become safe fails dangerous on exactly those faults.</p>
+<h4>The rule of thumb</h4><p>If you ever find yourself relying on a signal being present to keep people safe, rethink it. Absence of signal is the safe default.</p>`,
+// 3 NC + positive opening
+`<h4>Normally closed</h4><p>The contact is held closed in the safe/run condition and opens to trip. So both the intended action (pressing the e-stop, opening the guard) and the common fault (a broken wire) do the same thing — open the circuit and stop the machine.</p>
+<h4>Positive opening</h4><p>Marked with the arrow-in-a-circle symbol under IEC 60947-5-1, it guarantees the moving contact is driven apart by a rigid mechanical link, not returned by a spring. Even if the contacts weld, the mechanism prizes them open.</p>
+<h4>The failure it prevents</h4><p>A NO contact reads 'not operated' when its wire breaks — dangerous. A spring-return NC can stick closed if the spring fails or the contact welds. Positive-opening NC removes both failure modes.</p>`,
+// 4 PL
+`<h4>What PL measures</h4><p>Performance Level rates how much you can trust a safety function to perform on demand, PLa (least) to PLe (most). It's a probabilistic measure — average frequency of a dangerous failure per hour.</p>
+<h4>What feeds it</h4><p>Four things: the Category (architecture), MTTFd (how long components last before a dangerous failure), Diagnostic Coverage (how much of that the system detects), and Common-Cause Failure resistance (that one event can't take out both channels).</p>
+<h4>How it's used</h4><p>The risk assessment sets a required PL (PLr) from severity, exposure and avoidability. Your design — device choice, structure, diagnostics — then has to prove it meets or beats that PLr.</p>`,
+// 5 Categories
+`<h4>Architecture, not reliability</h4><p>The Category describes the structure and fault behaviour of the circuit. B and 1 are single channel — one fault can lose the function (1 just uses more robust, well-tried parts). 2 adds periodic testing of that single channel.</p>
+<h4>3 and 4</h4><p>Both are dual channel and survive a single fault. The difference: Category 4 also has to cope with an accumulation of faults (a second fault before the first is detected), demanding higher diagnostic coverage.</p>
+<h4>Don't conflate the words</h4><p>ISO 13849 <i>Category</i> (structure) feeds into <i>PL</i> (reliability) — but neither is the IEC 60204-1 <i>Stop Category</i> (0/1/2), which is only about how power is removed. Three different 'category' ideas share the word.</p>`,
+// 6 e-stop
+`<h4>Complementary, not primary</h4><p>An emergency stop is there for when things have already gone wrong. It supplements the guards, interlocks and safe systems of work — it is never the primary means of preventing access to a hazard.</p>
+<h4>What it must do</h4><p>Latch on operation, require a separate deliberate reset (which must not itself restart the machine), be reachable from the danger points, and bring the machine to a safe stop without generating a new hazard in doing so.</p>
+<h4>Why it isn't enough alone</h4><p>Human reaction plus machine stopping time is often far too slow to prevent injury once someone's in the danger zone. Rely on stopping the hazard being reached, not on hitting a button after it is.</p>`,
+// 7 coded interlock
+`<h4>Defeat is the enemy</h4><p>A guard interlock is only as good as its resistance to being cheated. A plain mechanical tongue switch can be operated with a spare tongue kept in a drawer; a simple magnetic switch with any magnet.</p>
+<h4>Coding</h4><p>RFID and coded-magnet switches pair a unique actuator to the switch. Uniquely coded devices learn one specific actuator; the switch ignores anything else, so a random magnet or spare actuator won't fool it. Coding level (low/high) is a rated safety attribute.</p>
+<h4>Human factor</h4><p>Operators defeat guards that slow them down. Part of the design job is making the safe way the easy way, so nobody is tempted to reach for the spare tongue in the first place.</p>`,
+// 8 guard locking
+`<h4>The overrun problem</h4><p>Interlocking stops the machine when the guard opens. But many machines coast — screws, flywheels, rollers keep moving after the command to stop. Open the guard during that coast-down and the hazard is still live.</p>
+<h4>What locking adds</h4><p>Guard locking physically holds the guard shut and only releases once the hazard has genuinely stopped — proven by a zero-speed/standstill monitor, or a time delay set longer than the worst-case run-down.</p>
+<h4>Power-to-lock vs power-to-release</h4><p>Power-to-release locks fail safe (lose power, stays locked) — preferred where overrun is dangerous. Power-to-lock frees the guard on power loss, only acceptable where trapping someone is the bigger risk. Choose deliberately.</p>`,
+// 9 light curtain
+`<h4>How it detects</h4><p>An emitter column and receiver column create parallel infrared beams. The receiver expects every beam; interrupt one and it switches its OSSD outputs off to command a stop. It's an active opto-electronic protective device (AOPD).</p>
+<h4>Resolution</h4><p>Beam spacing sets the minimum detectable object: ~14mm finger, ~30mm hand, larger for body/access detection. Finer resolution detects smaller intrusions but is used closer to the hazard; coarser is for whole-body access.</p>
+<h4>Safety distance</h4><p>It must be mounted far enough back that the machine stops before a hand reaches the danger: S = K·T + C, where T is total stopping time, K the approach speed, and C a resolution-based intrusion allowance. Too close and the curtain is decorative.</p>`,
+// 10 OSSD
+`<h4>What they are</h4><p>OSSDs are the two solid-state safety outputs of a curtain, scanner or safety sensor. Both switch to 24V in the safe/clear state and to 0V on detection or fault — dual outputs give the redundancy.</p>
+<h4>Why the pulses</h4><p>Each OSSD is driven low for microseconds on a staggered schedule. By reading its own outputs back, the device confirms each can still switch, isn't shorted to 24V, and isn't shorted to the other OSSD. It's continuous self-test.</p>
+<h4>Wiring consequence</h4><p>The pulses must terminate on a safe input designed to expect them (a safety relay or safe PLC input). Feed an OSSD into an ordinary DI and the test pulses look like chatter — and you lose the diagnostics that make it safe.</p>`,
+// 11 muting/blanking
+`<h4>Muting</h4><p>A controlled, temporary, automatic bypass — for example letting a pallet pass out of a cell without stopping the line. It's hedged with conditions: two or four independent muting sensors, a required sequence and direction, and a time limit, so a person can't reproduce the pattern and walk through.</p>
+<h4>Blanking</h4><p>Permanently ignoring part of the detection field. Fixed blanking masks a known fixture that always sits in the field; floating blanking allows a moving object (like passing material) within limits. Either reduces the protected area, so the residual gap must be safe.</p>
+<h4>The shared danger</h4><p>Both switch off protection for part of the field. Misapplied, they leave a hole a person fits through. They're powerful and legitimate — but they're where a lot of unsafe compromises hide, so they get designed and validated carefully.</p>`,
+// 12 reset
+`<h4>Two behaviours</h4><p>Automatic reset re-enables the outputs the moment the inputs go safe again. Monitored (manual) reset additionally requires a person to press and release a reset button — and the relay watches that edge.</p>
+<h4>Why the edge matters</h4><p>Checking the button's transition (and that it isn't already shorted or held) means a stuck reset, or a jumper across it, cannot silently re-enable the machine. Simply re-closing a guard must not restart it — a human has to consciously reset.</p>
+<h4>When automatic is allowed</h4><p>Only where it's impossible to be in the danger zone when the guard closes — small enclosed cells you can't enter, for instance. If a body can be inside, monitored reset is mandatory.</p>`,
+// 13 EDM
+`<h4>Closing the blind spot</h4><p>The safety relay controls its own contacts, but the machine is actually stopped by downstream power contactors it can't directly see. EDM gives it eyes on those contactors.</p>
+<h4>How it works</h4><p>Each monitored contactor has a force-guided auxiliary NC contact. Wired in series into the relay's feedback/reset path, these are closed only when the power contacts are open. Before the relay will energise its outputs, it checks this loop is closed.</p>
+<h4>The catch it makes</h4><p>If a power contact welds shut, its linked NC feedback is held open, the EDM loop stays broken, and the relay refuses to reset. The welded contactor is caught at the next start attempt instead of on the day it fails to stop the machine.</p>`,
+// 14 force-guided
+`<h4>Mechanically linked</h4><p>Force-guided (mirror) contacts have their NO and NC sets rigidly tied so they can never be closed simultaneously. If the NO power contact is made, the NC is guaranteed open, and vice-versa, over the device's whole life.</p>
+<h4>Why EDM needs it</h4><p>EDM trusts the NC feedback to report the true state of the NO power contact. An ordinary contactor can have contacts that stick or weld independently — the feedback could read 'open' while the power contact is actually welded closed. Force-guiding makes that impossible.</p>
+<h4>Spec note</h4><p>Look for 'force-guided' or 'mechanically linked' contacts to EN 50205. It's the difference between a feedback signal you can build a safety function on and one that might quietly lie to you.</p>`,
+// 15 PNOZ terminals
+`<h4>The universal scheme</h4><p>Whatever the badge, a basic safety relay has: a supply pair, two input channels for your dual-channel device, a reset input, and force-guided output contacts. Learn the pattern and any device's manual reads easily.</p>
+<h4>Pilz PNOZ example</h4><p>A1/A2 supply · S11–S12 channel 1 · S21–S22 channel 2 · S33–S34 reset (with the EDM/feedback contacts wired into the reset path) · 13–14, 23–24 the safety outputs (NO, force-guided) · 41–42 an auxiliary contact for signalling, never for safety.</p>
+<h4>Always confirm</h4><p>Terminal numbers differ across models and makers, and single-channel vs dual-channel wiring changes the links. Wire from the exact device's drawing, not from memory — this card is the shape, not the gospel for your specific unit.</p>`,
+// 16 stop categories
+`<h4>The three stops</h4><p>IEC 60204-1 defines how a machine is brought to rest. <b>Category 0:</b> power to the actuators is cut immediately — the machine coasts to a stop uncontrolled. <b>Category 1:</b> the drive brings it to a controlled halt, then power is removed. <b>Category 2:</b> controlled stop with power left on (a normal operational stop).</p>
+<h4>Choosing</h4><p>Cat 0 is simplest and certain but can be violent (coasting, dropped loads). Cat 1 stops a high-inertia machine in a controlled way before isolating — often safer for big drives. Cat 2 isn't an emergency stop; it holds position with power.</p>
+<h4>The classic confusion</h4><p>'Category 3' on a drawing almost always means ISO 13849 architecture, not a stop type — there is no Stop Category 3. Keep Stop Category (how it stops) and 13849 Category (how fault-tolerant the circuit is) firmly separate.</p>`,
+// 17 won't reset
+`<h4>It's a series chain</h4><p>A safety function only enables when every element in the loop is healthy at once. One open contact anywhere holds the whole thing off, so the job is to find which element is open, not to try things at random.</p>
+<h4>Work the loop</h4><p>Check in order: all e-stops released and latched out; all guards fully closed with both interlock contacts made; both channels present at the relay; the EDM/feedback loop closed (no welded contactor); the reset button and its wiring intact; discrepancy not exceeded.</p>
+<h4>Use the diagnostics</h4><p>Modern safety relays and controllers show channel and fault LEDs (or a diagnostic display) that point straight at the offending channel or a feedback fault. Read those first — they turn a loop-walk into a targeted check.</p>`,
+// 18 discrepancy
+`<h4>What it is</h4><p>Discrepancy time is the window within which both channels must change state together. Operate a healthy dual-channel switch and both contacts move within a few milliseconds; the relay allows a set tolerance for that.</p>
+<h4>What a fault means</h4><p>If one channel changes and the other hasn't followed when the window closes, the relay declares a discrepancy and locks out. It's telling you the two channels no longer agree — a sticking contact, a worn switch, a partly-broken wire, or a genuine short.</p>
+<h4>Why lock-out, not ignore</h4><p>A half-working dual-channel input has quietly lost its redundancy. Rather than run on one good channel, the relay stops and demands attention, so the degraded device gets replaced before the second channel fails too.</p>`,
+// 19 never bridge
+`<h4>What bridging does</h4><p>Linking across a safety input tells the relay that input is permanently 'safe'. The guard, e-stop or curtain on that channel is now electrically invisible — the machine will never stop for it again.</p>
+<h4>Why it's unforgivable</h4><p>It collapses a Category 3/4 function to nothing, it's a breach of the machine's safety design and the law, and worst of all it hides the real fault so the next person has no idea the protection is gone. Injuries from defeated guards are frequently fatal.</p>
+<h4>Do this instead</h4><p>Treat 'won't reset' as a fault to diagnose, not an obstacle to remove. Find the open channel, prove it dead, replace or repair the faulty element, and restore full dual-channel function. If production pressure is pushing you to bypass, that's the moment to stop and escalate.</p>`
+  ] },
+{ name:"Drives", sub:"SINAMICS G120 · VFD fault-finding", ref:"ELEC-REF-019",
+  cats:{
+  "SUPPLY & DC BUS":{key:"SUPPLY & DC BUS", color:"#E2953C"},
+  "MOTOR & OUTPUT":{key:"MOTOR & OUTPUT", color:"#E0685A"},
+  "SETUP & CONTROL":{key:"SETUP & CONTROL", color:"#3B8CD1"},
+  "COMMS & DIAG":{key:"COMMS & DIAG", color:"#8E6FD1"}
+  },
+  cards:[
+  { cat:"SUPPLY & DC BUS",
+    q:`What should the DC bus voltage read on a healthy drive?`,
+    a:`About <b>565 VDC</b> on a 400 V three-phase supply — it's the peak of the rectified line (√2 × 400 ≈ 565). Overvoltage trips near <b>820 V</b>; undervoltage well below 565.`,
+    wire:"dcbus",
+    why:{l:"Note", t:`The rectifier charges the DC link to the line peak, so 400 V AC gives ~565 V DC and 480 V gives ~680 V. Know the healthy figure so an over/undervoltage fault makes sense — but treat the bus as lethal, and prove it discharged before going near it.`} },
+
+  { cat:"SUPPLY & DC BUS",
+    q:`<b>F30002</b> — DC-link overvoltage. Most likely cause?`,
+    a:`<b>Regenerative energy on deceleration.</b> A fast ramp-down or an overhauling / high-inertia load pumps energy back into the bus faster than it can be dissipated. Also: braking resistor missing, failed or undersized, or a genuine supply overvoltage.`,
+    why:{l:"Check", t:`Lengthen the ramp-down (p1121) or fit/repair the braking resistor and chopper. The built-in Vdc-max controller (A07400) can auto-extend the ramp to ride it out. Tripping at steady speed instead points upstream at the supply.`} },
+
+  { cat:"SUPPLY & DC BUS",
+    q:`<b>F30003</b> — DC-link undervoltage. Where do you look?`,
+    a:`The <b>incoming supply</b> first: low line voltage, a brownout, or a lost phase dragging the bus down. If the supply is solid, suspect ageing DC-link capacitors or rectifier diodes in the power module.`,
+    why:{l:"Check", t:`Measure all three input phases under load. Repeated undervoltage with good incoming volts points at tired electrolytics — common after years of service — losing their grip on the bus during load transients.`} },
+
+  { cat:"SUPPLY & DC BUS",
+    q:`<b>F30011</b> — line phase failure. First checks?`,
+    a:`One of the three <b>mains phases is missing</b>: a blown input fuse, a loose or burnt input terminal, an open contactor pole, or an upstream trip. Confirm L1, L2 and L3 are all present and balanced at the drive input.`,
+    why:{l:"Check", t:`On two phases the drive draws much higher current on the remaining two and can't make rated power. Check fuses, the incoming isolator/contactor and terminal tightness — loose input terminals cook themselves and drop a phase.`} },
+
+  { cat:"SUPPLY & DC BUS",
+    q:`What does the braking resistor and chopper actually do?`,
+    a:`They <b>dump regenerative energy as heat</b>. When the motor decelerates or is driven by the load it feeds energy back to the DC bus; the braking chopper (an IGBT) switches that surplus into the resistor to hold the bus voltage down.`,
+    why:{l:"Why", t:`With nowhere for regen energy to go, a quick stop or an overhauling load pushes the bus straight into F30002. High-inertia, vertical and winder loads nearly always need a braking resistor sized to the duty cycle.`} },
+
+  { cat:"MOTOR & OUTPUT",
+    q:`<b>F30001</b> — overcurrent. What causes it?`,
+    a:`A <b>short or earth fault</b> on the motor cable or winding, an <b>accel ramp too short</b> for the load, wrong motor data or star/delta, a seized load, or a missing line reactor. The output shuts off instantly to protect the IGBTs.`,
+    why:{l:"Check", t:`Isolate and meg the motor and cable to rule out shorts and earths (the fault value r0949 flags phase U/V/W or the DC link). Then check ramp-up (p1120), motor data and the star/delta link before powering back up.`} },
+
+  { cat:"MOTOR & OUTPUT",
+    q:`<b>F30021</b> — ground fault. What's it telling you?`,
+    a:`Current is leaking <b>to earth</b> — insulation breakdown in the motor or its cable. Wet or damaged cable, a chafed core, or a failing winding are the usual culprits.`,
+    why:{l:"Check", t:`Isolate, then insulation-test the motor and cable to earth separately to find which is down. A motor that megs low hot but fine cold is on its way out. Don't just reset and run — earth faults only get worse.`, danger:true} },
+
+  { cat:"MOTOR & OUTPUT",
+    q:`<b>F07011</b> — motor overtemperature. Causes?`,
+    a:`The thermal model or the motor's own sensor (PTC / KTY / PT1000) says it's <b>too hot</b>: sustained overload, poor cooling (blocked fan, high torque at low speed on a self-cooled motor), high ambient — or a sensor/wiring fault reading falsely.`,
+    why:{l:"Check", t:`First confirm it's real — is the motor actually hot? Check the load, the fan and cooling path, and low-speed running without forced cooling. Cold but faulting points at the temperature sensor or its wiring back to the drive.`} },
+
+  { cat:"MOTOR & OUTPUT",
+    q:`<b>F07900</b> — motor blocked. What does it mean?`,
+    a:`The motor is <b>below the speed threshold while the controller is pinned at its torque limit</b> — the drive is pushing full torque but the shaft isn't turning as expected. Think mechanical jam, a brake that hasn't released, or torque limits set too low.`,
+    why:{l:"Check", t:`Check the mechanics turn freely and any holding brake releases. Then the torque limits (r1538/r1539), the star/delta and U-V-W wiring, and — if fitted — encoder direction. A ramp too short for a high-inertia load can trigger it too.`} },
+
+  { cat:"MOTOR & OUTPUT",
+    q:`<b>F07902</b> — motor stalled. Usual cause?`,
+    a:`The drive can't establish proper control — most often <b>wrong motor data or no motor identification done</b>, so it never magnetises correctly. Current limits set too low will also stop it developing torque.`,
+    why:{l:"Check", t:`Recheck the nameplate data, run a motor data identification (p1900), and check the current limits (p0640). It shows up most often straight after a fresh commissioning where the ID run was skipped.`} },
+
+  { cat:"MOTOR & OUTPUT",
+    q:`<b>F30004</b> vs <b>F30005</b> — what's the difference?`,
+    a:`<b>F30004</b> = inverter <b>overtemperature</b>: the drive itself is too hot — blocked or failed cooling fan, clogged filters, high cabinet ambient, or switching frequency set too high. <b>F30005</b> = <b>I²t overload</b>: it's delivered more than its thermal rating for too long.`,
+    why:{l:"Check", t:`F30004 → clear the cooling path: fan turning? filters clean? cabinet ventilated? F30005 → the drive is undersized or the duty is too heavy; compare actual current against rated, and check the load or a mechanical drag isn't pulling more than it should.`} },
+
+  { cat:"SETUP & CONTROL",
+    q:`V/f vs vector control — when do you use each?`,
+    a:`<b>V/f</b> (p1300 = 0/…): simple, holds a fixed voltage-to-frequency ratio — ideal for pumps, fans and multi-motor groups, and needs no motor ID. <b>Vector</b>: controls flux and torque for high torque at low speed and tight speed holding, but needs accurate motor data and an ID run.`,
+    wire:"vfcurve",
+    why:{l:"Note", t:`Use V/f when the load is well-behaved and you want it robust and simple. Use vector when you need full torque from standstill, precise speed or fast dynamics — extruder screws and haul-offs usually want vector.`} },
+
+  { cat:"SETUP & CONTROL",
+    q:`Why does the motor nameplate data matter so much?`,
+    a:`The drive builds its whole control model from it. Rated <b>voltage, current, frequency, speed, power and cos φ</b> go into the motor parameters (p0304–p0311). Wrong data means poor control and nuisance overcurrent or overtemperature faults.`,
+    why:{l:"Check", t:`Enter the plate exactly, and match the star/delta connection to the voltage you're feeding. A 230/400 V motor left in delta on a 400 V drive, or the wrong rated current, will fight the drive from the very first start.`} },
+
+  { cat:"SETUP & CONTROL",
+    q:`What is a motor data identification (p1900), and why run it?`,
+    a:`The drive <b>measures the actual motor</b> — winding resistance and inductances — and tunes its model to match. Run it after commissioning: a stationary ID is usually enough, a rotating ID refines it further.`,
+    why:{l:"Note", t:`Nameplate data gets you close; the ID run makes vector control actually work. Skip it and you get sluggish torque, stalls (F07902) or hunting. It's a couple of minutes that saves a lot of grief later.`} },
+
+  { cat:"SETUP & CONTROL",
+    q:`Ramp times p1120 / p1121 — how do they cause faults?`,
+    a:`<b>p1120</b> (ramp-up) too short → the drive slams current into the load → <b>F30001 overcurrent</b>. <b>p1121</b> (ramp-down) too short → regen energy spikes the bus → <b>F30002 overvoltage</b>. Match the ramps to the load's inertia.`,
+    wire:"ramps",
+    why:{l:"Method", t:`Trips while accelerating → lengthen p1120 or check the load. Trips while decelerating → lengthen p1121 or fit a braking resistor. The two ramps are independent; tune the one that matches when the fault lands.`} },
+
+  { cat:"SETUP & CONTROL",
+    q:`Motor trips on overcurrent or won't pull — check what wiring?`,
+    a:`The <b>star/delta link</b> in the motor terminal box. A 230/400 V motor runs in <b>star</b> on a 400 V supply and <b>delta</b> on a 230 V supply. Get it wrong and you either over-flux it (overcurrent) or starve it of torque.`,
+    why:{l:"Check", t:`Read the two voltages on the nameplate (e.g. 230 Δ / 400 Y) and set the link bars to match your drive's output voltage. This bites most often after a motor swap, where the box links were left as they came.`} },
+
+  { cat:"COMMS & DIAG",
+    q:`Fault (F) vs Alarm (A) — what's the difference?`,
+    a:`An <b>F</b> is a fault: the drive trips, latches, and won't run until you clear the cause and acknowledge it. An <b>A</b> is an alarm: a warning that something needs attention, but the drive keeps running.`,
+    why:{l:"Note", t:`Alarms are your early warning. A07400 (Vdc-max active) or a load alarm tells you the drive is straining to avoid a trip. Read alarms before they become faults — they often name the exact condition that's building.`} },
+
+  { cat:"COMMS & DIAG",
+    q:`How do you acknowledge (reset) a SINAMICS fault?`,
+    a:`<b>Clear the cause first</b>, then acknowledge — via a digital input set to acknowledge, the fieldbus control word (STW1 bit 7, on a rising edge), the operator panel, or p3981. Some faults need a full power-cycle.`,
+    why:{l:"Method", t:`It won't clear while the cause is still present — that's by design. If a fault refuses to acknowledge, the condition is still there; go back and find it rather than hammering the reset button.`} },
+
+  { cat:"COMMS & DIAG",
+    q:`<b>F08501</b> — setpoint timeout. What happened?`,
+    a:`The drive <b>stopped receiving cyclic data</b> from the PLC over PROFINET. A pulled or damaged cable, a failed switch, the PLC dropping to STOP, or a device name / IP mismatch after a swap will all do it.`,
+    why:{l:"Check", t:`Check the PN cable and link LEDs, that the PLC is in RUN, and the network topology. After replacing a drive, the new one needs the correct PROFINET device name assigned or the controller simply won't talk to it.`} },
+
+  { cat:"COMMS & DIAG",
+    q:`Where does the drive record what actually tripped it?`,
+    a:`In its <b>fault buffer</b>. The active fault code sits in <b>r0945</b> and the fault value in <b>r0949</b>, and the drive keeps a history with values and timestamps. Read the real fault number rather than guessing from symptoms.`,
+    why:{l:"Method", t:`The fault value (r0949) often pinpoints the cause — which phase on an overcurrent, which detection method on a stall. Two minutes reading the buffer beats an hour chasing the wrong lead.`} }
+  ],
+  more:[
+// 0 DC bus normal
+`<h4>Where 565 V comes from</h4><p>A three-phase diode rectifier charges the DC link to the peak of the line-to-line voltage. For a 400 V supply that's 400 × √2 ≈ 565 V DC; a 480 V supply gives about 680 V. It is not a set value — it follows the incoming mains.</p>
+<h4>Why the thresholds sit where they do</h4><p>The overvoltage trip (~820 V on a 400 V-class drive) leaves headroom above the normal 565 V for brief regen surges before the caps and IGBTs are at risk. Undervoltage trips well below 565 V, where the drive can no longer hold up the output.</p>
+<h4>Safety</h4><p>The DC link holds a lethal charge for minutes after isolation. Prove it dead at the DC terminals before touching anything — the bus caps do not discharge instantly when you open the isolator.</p>`,
+// 1 F30002
+`<h4>The mechanism</h4><p>A spinning motor being slowed becomes a generator, feeding energy back into the DC link. If that energy arrives faster than it leaves, the bus voltage climbs until it hits the trip threshold and the drive shuts down to save the caps and IGBTs.</p>
+<h4>The usual triggers</h4><p>Ramp-down set too short for the inertia; an overhauling load (a winder, a descending mass) driving the motor; or a braking resistor that's missing, open-circuit or too small for the duty. A genuinely high supply can do it too.</p>
+<h4>Fixes in order</h4><p>Lengthen p1121, enable/verify the Vdc-max controller (it stretches the ramp automatically, flagged by A07400), then fit or repair the braking resistor and chopper if the duty demands real braking. If it trips at constant speed, measure the incoming supply.</p>`,
+// 2 F30003
+`<h4>What it means</h4><p>The DC link has sagged below its minimum. The inverter can't synthesise proper output volts from a low bus, so it trips rather than deliver degraded, current-heavy output to the motor.</p>
+<h4>External vs internal</h4><p>External: low or unstable mains, a brownout, or a lost supply phase pulling the bus down under load. Internal: after years in service the electrolytic DC-link capacitors lose capacitance and gain ESR, so they can't hold the bus up during load steps — and rectifier diodes can fail.</p>
+<h4>How to split it</h4><p>Meter all three input phases while the machine is loaded. Solid incoming volts but repeated undervoltage points inside the power module — tired caps or a failing rectifier — rather than at the supply.</p>`,
+// 3 F30011
+`<h4>What's happened</h4><p>The drive has detected that one of its three incoming supply phases is gone. A three-phase rectifier really wants all three; on two it ripples harder, draws more current on the survivors and can't make rated DC bus.</p>
+<h4>Where to look</h4><p>An input fuse (or one pole of a three-pole fuse), a loose or heat-damaged input terminal, one welded-open pole of the supply contactor, or an upstream device that's tripped a single phase. Check each phase is present and roughly balanced at the drive terminals.</p>
+<h4>The sneaky one</h4><p>A terminal that's loose but still just touching runs hot, oxidises and eventually opens under load — intermittent phase loss that clears when cool. Torque-check the input terminals; discoloured insulation is the giveaway.</p>`,
+// 4 braking resistor
+`<h4>The four-quadrant problem</h4><p>A standard drive can motor the load but has no way to push regenerated energy back to the mains — the diode rectifier only conducts one way. So braking energy has nowhere to go except into the DC-link capacitors, raising their voltage.</p>
+<h4>How the chopper helps</h4><p>When the bus rises past a set level, the braking chopper (an IGBT across the bus) switches the braking resistor in, turning the surplus energy into heat. It pulses on and off to hold the bus just below the overvoltage trip during the whole deceleration.</p>
+<h4>Sizing and duty</h4><p>The resistor is rated for both peak power and average (duty-cycle) power. Undersize it and it either can't hold the bus (F30002) or overheats and opens. High-inertia, fast-cycling and overhauling loads are the ones that genuinely need it — check the resistor's thermal overload contact is wired in, too.</p>`,
+// 5 F30001
+`<h4>Instant protection</h4><p>The power unit watches each output phase and, on a genuine overcurrent, shuts the IGBTs off in microseconds — far faster than any thermal trip — because an uncleared short would destroy the module. So F30001 is a hard, immediate trip.</p>
+<h4>The cause list</h4><p>A short between output phases or a phase-to-earth fault in the motor or cable; an accel ramp so short the drive floods the load with current; wrong motor data or star/delta over-fluxing the motor; a mechanically seized load; or a missing line reactor allowing big inrush.</p>
+<h4>Diagnose before re-powering</h4><p>Isolate and insulation-test the motor and cable — the fault value r0949 tells you which phase (U/V/W) or the DC link. Only once shorts and earths are ruled out do you look at ramp times, motor data and the connection. Never just reset into a suspected short.</p>`,
+// 6 F30021
+`<h4>What the drive sees</h4><p>The vector sum of the three output currents should be zero. When current escapes to earth instead of returning through the other phases, that balance breaks and the drive flags a ground fault — current is going somewhere it shouldn't.</p>
+<h4>Common causes</h4><p>Insulation breakdown in the motor windings, a cable damaged by crushing, vibration or moisture ingress, or a chafed core touching the gland or frame. Damp motors after a washdown or a cold start are classic.</p>
+<h4>Finding it</h4><p>Isolate, then insulation-test (megger) the cable and motor separately, each phase to earth, to localise the fault. A winding that reads healthy cold but breaks down hot is failing and will only get worse — don't reset and run an earth fault, it can become a phase-to-phase short.</p>`,
+// 7 F07011
+`<h4>Two ways it's sensed</h4><p>Either a real temperature sensor embedded in the windings (PTC, KTY84 or PT1000) reports back, or the drive's thermal model estimates winding temperature from load and time. Either exceeding the limit raises F07011.</p>
+<h4>Why motors cook</h4><p>Sustained overload; a blocked or failed cooling fan; running high torque at low speed on a self-cooled (TEFC) motor whose shaft-mounted fan barely turns; high ambient in a hot part of the plant; or simply an undersized motor for the duty.</p>
+<h4>Real or false?</h4><p>Touch-check (safely) whether the motor is actually hot. Hot → attack the cause: load, cooling, low-speed duty. Cold but still faulting → suspect the sensor, its wiring back to the drive, or the wrong sensor type parameterised. Never just raise the limit to make it go away.</p>`,
+// 8 F07900
+`<h4>The condition</h4><p>The speed controller has hit its torque limit (it's asking for all the torque it's allowed) yet the motor is turning below the expected speed for longer than the set delay. In short: full effort, no rotation — the drive concludes the motor is blocked.</p>
+<h4>What blocks it</h4><p>A genuine mechanical jam or overload; a holding brake that hasn't released; torque limits (r1538/r1539) set too low for the starting torque needed; star/delta or U-V-W miswired so the motor can't develop torque; an encoder reading the wrong direction; or a ramp too aggressive for a high-inertia load.</p>
+<h4>Order of checks</h4><p>Prove the machine turns freely by hand and the brake lifts first — that's the cheap, likely cause. Then torque limits and wiring, then encoder direction if fitted. Don't wind the limits up to force through a real mechanical fault.</p>`,
+// 9 F07902
+`<h4>Stall vs block</h4><p>Where 'blocked' is about full torque and no movement, 'stalled' is the drive losing its grip on the motor model — it can't keep the machine magnetised and under control, so field-oriented control collapses and it trips after the p2178 delay.</p>
+<h4>Root causes</h4><p>Almost always motor data: nameplate values entered wrong, or the motor data identification (p1900) never run, so the drive's model doesn't match the real motor. Current limits (p0640) set too low can also starve it of magnetising current.</p>
+<h4>The fix</h4><p>Re-enter the nameplate carefully, run the ID (stationary at least), and check the current limits. It's the classic 'ran fine on the bench, stalls on the machine' fault when commissioning was rushed — the ID run is not optional for vector control.</p>`,
+// 10 F30004 / F30005
+`<h4>Two different heat problems</h4><p><b>F30004</b> is the drive's own heatsink/inverter running too hot — a cooling problem. <b>F30005</b> is an I²t calculation: the drive has carried more current than its rating allows for long enough that its thermal model says 'stop before I damage myself'.</p>
+<h4>F30004 — cooling</h4><p>Fan failed or blocked, filter mats clogged, cabinet ventilation poor or ambient too high, or a switching frequency set higher than needed (more switching = more IGBT loss = more heat). Clear the airflow path first; a stopped fan is the usual answer.</p>
+<h4>F30005 — overload</h4><p>The drive is undersized for the duty, or the load is drawing more than expected — a partial mechanical seizure, wrong control mode, or genuinely too much work. Compare running current with the rating, and check the machine isn't dragging.</p>`,
+// 11 V/f vs vector
+`<h4>V/f control</h4><p>The simplest scheme: the drive holds a fixed ratio of voltage to frequency (so flux stays roughly constant) and just sets the output frequency. It needs no knowledge of the specific motor, tolerates several motors on one drive, and is rock-solid for pumps and fans.</p>
+<h4>Vector control</h4><p>The drive models the motor and controls flux and torque-producing current separately, like a DC drive. That buys full torque from standstill, tight speed holding under changing load, and fast response — but it needs accurate motor data and a motor ID run to model the machine.</p>
+<h4>Choosing on the floor</h4><p>Fan/pump, multi-motor, or you just want robust and simple → V/f. Needs starting torque, precise or dynamic speed (extruder screw, haul-off, winder) → vector, and budget the extra commissioning to do the ID run.</p>`,
+// 12 nameplate
+`<h4>Garbage in, garbage out</h4><p>Everything the drive does — its flux model, its current limits, its thermal protection — is built on the nameplate figures. Enter them wrong and every layer above is working from a false picture of the motor.</p>
+<h4>What goes in</h4><p>Rated voltage, current, frequency, speed (rpm), power (kW) and power factor (cos φ), into the motor parameters around p0304–p0311. The connection you've wired (star or delta) has to match the rated voltage you're feeding.</p>
+<h4>How it bites</h4><p>Wrong rated current and the overload protection is set to the wrong level; wrong voltage/connection and the motor is over- or under-fluxed, giving nuisance overcurrent, poor torque or overheating. Copy the plate exactly — don't round or assume.</p>`,
+// 13 motor ID
+`<h4>What it measures</h4><p>The identification routine energises the motor to measure its real electrical characteristics — stator resistance, leakage and magnetising inductance, cable resistance. The drive then corrects its model to the actual machine and cabling.</p>
+<h4>Stationary vs rotating</h4><p>A stationary ID (p1900) measures the electrical values without turning the shaft — safe and usually enough. A rotating ID additionally turns the motor to refine the magnetising and speed-loop data, for the best vector performance where the load allows it to spin freely.</p>
+<h4>Why it's not optional</h4><p>Nameplate data alone leaves the model approximate. Skip the ID on a vector drive and you get weak or sluggish torque, hunting, or outright stalls (F07902). Two minutes running the ID at commissioning prevents a pile of nuisance faults later.</p>`,
+// 14 ramps
+`<h4>Two independent slopes</h4><p>p1120 sets how fast the drive raises frequency (accelerate); p1121 sets how fast it lowers it (decelerate). They're separate parameters and they fail in opposite ways, so which one to touch depends on when the trip happens.</p>
+<h4>Up too fast → F30001</h4><p>Command a big speed increase too quickly and the drive floods the motor with current to accelerate the inertia — straight into overcurrent. Ease p1120, or accept the load simply needs longer to get up to speed.</p>
+<h4>Down too fast → F30002</h4><p>Decelerate too quickly and the motor regenerates hard, spiking the DC bus into overvoltage. Ease p1121, or if the process needs the fast stop, fit a braking resistor to absorb it. Match the fault timing to the ramp and you fix the right one.</p>`,
+// 15 star/delta
+`<h4>The dual-voltage motor</h4><p>Most small industrial motors are wound for two voltages in a 1:√3 ratio, e.g. 230/400 V. Delta connection presents the windings to the higher current/lower voltage; star connection puts √3 more volts across the effective winding. The link bars in the terminal box select which.</p>
+<h4>Match to the supply</h4><p>On a 400 V drive output you wire that 230/400 V motor in <b>star</b>; on 230 V you'd wire it in <b>delta</b>. The rule: the connection must present each winding with its rated voltage.</p>
+<h4>What goes wrong</h4><p>Left in delta on a 400 V feed the motor is badly over-fluxed — huge magnetising current and overcurrent trips. Wrongly in star where delta was needed and it's starved, weak and can't pull the load. It's the first thing to check after any motor swap.</p>`,
+// 16 F vs A
+`<h4>Two severities</h4><p>A fault (F-number) is serious enough that the drive stops the motor, latches the condition and refuses to run until it's cleared and acknowledged. An alarm (A-number) is advisory — the drive flags it but keeps running.</p>
+<h4>Alarms are the early warning</h4><p>Many alarms are the drive telling you it's actively working to avoid a fault: A07400 (Vdc-max controller active) means it's stretching the ramp to dodge an overvoltage trip; a load or current-limit alarm means it's holding back. Catch these and you fix the cause before it becomes downtime.</p>
+<h4>Reading them</h4><p>The panel or engineering tool shows the number and text. Note the exact code — 'it threw a fault' is useless to the next person; 'F30002 on decel' points straight at the ramp or braking resistor.</p>`,
+// 17 acknowledging
+`<h4>Cause first, then acknowledge</h4><p>Acknowledging only clears the latched flag — it does nothing to the underlying condition. If the cause is still present, the fault either won't clear or comes straight back. So diagnose and fix, then acknowledge.</p>
+<h4>The ways to do it</h4><p>A digital input configured for fault acknowledge; the fieldbus control word STW1 bit 7 on a rising edge (how the PLC does it); the operator panel; or setting p3981. A handful of severe faults need a full power-off/on (POWER ON acknowledge) to clear.</p>
+<h4>The tell</h4><p>A fault that won't acknowledge is telling you the condition is live. Resist the urge to keep pressing reset — that's the moment to go back to the fault value and the wiring, not to hammer the button.</p>`,
+// 18 F08501
+`<h4>What timed out</h4><p>The drive expects fresh cyclic process data from the controller every few milliseconds over PROFINET. When that data stops arriving for longer than the monitoring time, it raises F08501 and reacts (typically stopping) rather than run blind on stale setpoints.</p>
+<h4>Where it breaks</h4><p>A pulled, damaged or poorly-terminated PN cable; a failed or powered-down switch; the PLC dropping to STOP or being reprogrammed; or, after a device swap, a wrong or missing PROFINET device name so the controller never establishes the connection.</p>
+<h4>Checks</h4><p>Look at the PN port link LEDs, confirm the PLC is in RUN, and walk the topology for the break. A replacement drive must have the correct device name assigned (via the engineering tool or topology-based naming) before it will exchange data.</p>`,
+// 19 fault buffer
+`<h4>The drive keeps records</h4><p>SINAMICS stores faults in a buffer, not just the one on the screen. The active fault code is in r0945 and its fault value in r0949, with a history of recent faults held with their values and time stamps — so you can see what actually happened, and in what order.</p>
+<h4>Use the fault value</h4><p>r0949 is where the detail hides: on an overcurrent it flags which phase or the DC link; on a stall it encodes the detection method. Reading it turns a vague code into a specific lead, instead of guessing from the symptom.</p>
+<h4>Order matters</h4><p>The buffer's sequence tells a story — an F30002 followed by an F30003, say, suggests the overvoltage event stressed the supply side. Read the whole buffer before deciding on root cause; the first fault is often the real one and the rest are consequences.</p>`
+  ] },
+{ name:"Safe Isolation", sub:"prove dead · lock off · GS38", ref:"ELEC-REF-020",
+  cats:{
+  "PROCEDURE":{key:"PROCEDURE", color:"#4FA96A"},
+  "PROVE DEAD":{key:"PROVE DEAD", color:"#E2953C"},
+  "TEST GEAR":{key:"TEST GEAR", color:"#3B8CD1"},
+  "HAZARDS":{key:"HAZARDS", color:"#E0685A"}
+  },
+  cards:[
+  { cat:"PROCEDURE",
+    q:`Safe isolation — what's the sequence?`,
+    a:`<b>Identify</b> the circuit → get <b>permission</b> to isolate → <b>isolate</b> at the right point → <b>secure</b> it (lock off + caution tag) → <b>prove dead</b> (prove–test–prove) → only then <b>work</b>.`,
+    why:{l:"Method", t:`Every step earns its place. Skip 'secure' and someone re-energises behind you; skip 'prove dead' and you're trusting a switch you never verified. The sequence is the safe system of work, not a suggestion.`} },
+
+  { cat:"PROCEDURE",
+    q:`Locking off — why your own lock and the only key?`,
+    a:`So <b>only you</b> can restore the supply. You fit a personal padlock at the isolator, keep the single unique key on you, and no one else can re-energise the circuit while you're working on it.`,
+    wire:"lockoff",
+    why:{l:"Why", t:`A switch left off can be flicked back by anyone who doesn't know you're on it. A lock with the key in your pocket makes accidental or thoughtless re-energising physically impossible.`} },
+
+  { cat:"PROCEDURE",
+    q:`Is a caution tag on its own enough?`,
+    a:`No. A tag <b>warns</b> — who isolated, when and why — but it doesn't <b>secure</b> anything. It goes <i>with</i> a lock, never instead of one. A tag on its own can be ignored or taken off.`,
+    why:{l:"Note", t:`The tag tells the story; the lock enforces it. Together they mean the next person both understands why it's off and physically cannot turn it back on.`} },
+
+  { cat:"PROCEDURE",
+    q:`Several people working on one isolation — how?`,
+    a:`A <b>lock-off hasp</b>: every worker fits their <b>own personal lock</b> to it. The isolation can't be removed until the last lock comes off — so nobody restores power while anyone is still working.`,
+    why:{l:"Why", t:`One shared lock trusts a single person to know everyone is clear. Individual locks mean each person controls their own safety and removes their lock only when they, personally, are done.`} },
+
+  { cat:"PROCEDURE",
+    q:`When do you need a permit to work?`,
+    a:`For <b>higher-risk work</b> — HV, complex or multiple isolations, confined spaces, shared plant. It's a formal document defining the scope, the isolations, the precautions, and who signs on and off. It hands control over and takes it back.`,
+    why:{l:"Note", t:`A permit forces the isolations and precautions to be written, checked and signed rather than assumed. It's the paperwork that stops two teams working at cross purposes on the same plant.`} },
+
+  { cat:"PROVE DEAD",
+    q:`What is the prove–test–prove sequence?`,
+    a:`<b>Prove</b> your voltage indicator works on a known source or proving unit → <b>test</b> the isolated circuit and confirm it's dead → <b>prove</b> the indicator again. Three steps, every time.`,
+    wire:"provetest",
+    why:{l:"Method", t:`A dead reading only means something if the tester was proven working immediately before and after. Prove–test–prove is the whole point — the test in the middle is worthless without the two proves.`} },
+
+  { cat:"PROVE DEAD",
+    q:`Why prove the tester again after testing?`,
+    a:`To catch a tester that <b>failed during the test</b>. If it died between proving and testing — flat battery, blown fuse, damaged lead — a "dead" reading could be a lethal false negative. Proving after confirms it still worked.`,
+    why:{l:"Safety", t:`Without the second prove you can't tell 'circuit is dead' from 'tester is broken' — both read nothing. The after-prove is exactly what makes the dead reading trustworthy.`, danger:true} },
+
+  { cat:"PROVE DEAD",
+    q:`Single-phase circuit — what do you test?`,
+    a:`Every combination: <b>L–N, L–E and N–E</b>. Don't assume the neutral is dead or that you know which conductor is which — prove all of them against each other and against earth.`,
+    why:{l:"Why", t:`A borrowed or shared neutral, a wiring error or a backfeed can leave a 'neutral' live. Testing every pair is the only way to be sure no conductor is holding a voltage.`} },
+
+  { cat:"PROVE DEAD",
+    q:`Three-phase circuit — what do you test?`,
+    a:`<b>Every conductor against every other and against earth</b>: L1–L2, L2–L3, L1–L3, each L–N, each L–E, and N–E. Ten tests. Miss one and it could be the one still live.`,
+    wire:"testpoints",
+    why:{l:"Method", t:`Prove every phase dead to every other phase, to neutral and to earth. It's methodical because a single missed combination is exactly the one that catches you out.`} },
+
+  { cat:"PROVE DEAD",
+    q:`What do you prove the tester on?`,
+    a:`A <b>dedicated proving unit</b>, or a known reliable live source. A proving unit is best — it's purpose-made to output a voltage, so you're never relying on guessing whether some socket is actually live.`,
+    why:{l:"Why", t:`Prove on a 'known live' source that turns out to be dead and you'll wrongly think your tester is faulty — and start doubting genuine dead readings. A proving unit removes that uncertainty entirely.`} },
+
+  { cat:"TEST GEAR",
+    q:`What is GS38?`,
+    a:`HSE guidance on <b>electrical test equipment</b> for people working on or near electrical systems. It covers probes, leads and indicators, aiming to cut the risk of shock and arc flash from the test gear itself.`,
+    why:{l:"Note", t:`It's guidance, not a fault code — but it's the reference behind your leads having finger guards, shrouded tips and fuses. Kit 'to GS38' is the baseline for safe proving.`} },
+
+  { cat:"TEST GEAR",
+    q:`Why a two-pole voltage indicator over a multimeter for proving dead?`,
+    a:`It's <b>purpose-built and hard to mislead</b>: no range to set wrong, a clear live/dead indication, robust, self-contained. A multimeter can sit on the wrong range or function, or have a flat battery, and give a false "dead".`,
+    why:{l:"Why", t:`For proving dead you want the fewest ways to fool yourself. A two-pole tester to GS38 does one job clearly; a multimeter has settings that can quietly hand you a dangerous wrong answer.`} },
+
+  { cat:"TEST GEAR",
+    q:`What does a proving unit do?`,
+    a:`It <b>generates a voltage to prove your voltage indicator works</b> — before and after testing — without needing to hunt for a known live source. Prove the tester on it, test the circuit, prove the tester on it again.`,
+    why:{l:"Note", t:`It makes prove–test–prove reliable and repeatable straight from your pocket. No searching for a live socket, no doubt about whether your reference was really live.`} },
+
+  { cat:"TEST GEAR",
+    q:`GS38 — what makes a test probe safe?`,
+    a:`<b>Finger barriers</b>, a minimal exposed metal tip (shrouded or spring-loaded, only a couple of mm), <b>insulated fused leads</b> with HRC fuses or current limiting, and high breaking capacity — so the gear itself can't cause a shock or arc if it slips or faults.`,
+    why:{l:"Why", t:`Long bare probe tips bridge terminals and flash over; unfused leads can dump huge fault current into an arc. These GS38 features exist because the test equipment itself has injured people.`} },
+
+  { cat:"TEST GEAR",
+    q:`Measurement CAT ratings — CAT III vs CAT IV?`,
+    a:`They rate the <b>transient energy your gear must survive</b> for where you're working. <b>CAT III</b>: fixed installation and distribution. <b>CAT IV</b>: the origin of supply — service entrance, incomer, meters. Match the rating to the location <i>and</i> the voltage.`,
+    why:{l:"Why", t:`Closer to the incoming supply, fault energy and transients are higher. A CAT III meter used at a CAT IV location can flash over internally. Rate the gear for where the probes actually go.`} },
+
+  { cat:"HAZARDS",
+    q:`Isolated a drive — why isn't it safe to touch yet?`,
+    a:`<b>Stored charge.</b> VFDs, power supplies and capacitor banks hold a lethal voltage on their DC bus for minutes after isolation. Wait the stated discharge time, then <b>prove dead at the terminals</b> — off does not mean discharged.`,
+    why:{l:"Safety", t:`The DC-link capacitors don't dump their charge when you open the isolator. 'Switched off' and 'safe to touch' are not the same thing until you've proved it dead.`, danger:true} },
+
+  { cat:"HAZARDS",
+    q:`Circuit's dead at the main isolator — what could still make it live?`,
+    a:`A <b>backfeed</b> from another source: a UPS, standby generator, a shared neutral, or an interlinked panel feeding in from the other direction. Isolate every source, then prove dead to confirm nothing is feeding back.`,
+    why:{l:"Why", t:`Isolating the obvious incomer isn't enough if something else can energise the same conductors. Prove dead is what catches the backfeed you didn't know was there.`} },
+
+  { cat:"HAZARDS",
+    q:`Why check for more than one supply?`,
+    a:`Machines often have <b>several sources</b> — a second incomer, a control transformer fed from elsewhere, a separate 24 V supply, or interlocked panels. <b>Identify and isolate every one</b> before you start.`,
+    why:{l:"Method", t:`One isolator rarely kills everything on a modern machine. Read the drawings, trace the supplies, and lock off each — a single missed feed leaves live parts where you least expect them.`} },
+
+  { cat:"HAZARDS",
+    q:`Electrical isolation done — what other energy can still hurt you?`,
+    a:`<b>Springs, pneumatics, hydraulics, gravity and inertia.</b> A pressurised accumulator, a raised ram, a loaded spring or a coasting flywheel can all move or release after the power's off. Release, block or support them too.`,
+    why:{l:"Safety", t:`Locking off the electrics does nothing to a charged air receiver or a suspended load. A full isolation means every energy source — electrical and stored mechanical — made safe.`} },
+
+  { cat:"HAZARDS",
+    q:`Someone says they've already isolated it — do you trust it?`,
+    a:`No — <b>prove it dead yourself</b>, every time. Dead working is the default; you verify the isolation with your own proven tester, at the point of work, before touching anything — regardless of who says what.`,
+    why:{l:"Safety", t:`Isolations get removed, the wrong breaker gets locked, labels get swapped. The only isolation you can trust is one you have proved dead yourself, right now, where you're about to work.`, danger:true} }
+  ],
+  more:[
+// 0 sequence
+`<h4>The safe system of work</h4><p>Safe isolation isn't a single action, it's an ordered procedure — each step protects against a specific way of getting caught out. Done in order it leaves you certain the thing you're about to touch is dead and will stay dead.</p>
+<h4>The steps</h4><p>Identify exactly what you're isolating; get the authority to do it; isolate at a point that truly removes the supply; secure that isolation with a lock and a caution tag; prove the circuit dead with the prove–test–prove routine; only then start work.</p>
+<h4>Why order matters</h4><p>Prove dead before you secure and someone could re-energise between the test and the work. Secure without proving dead and you're trusting a switch you never checked. The value is in doing every step, in sequence, every time — familiarity is exactly when people start skipping steps.</p>`,
+// 1 lock off
+`<h4>Personal lock, single key</h4><p>You fit your own padlock to the isolator (via a lock-off device if the isolator isn't natively lockable) and keep the one and only key on your person. Not on a hook, not in the panel — on you.</p>
+<h4>Why it has to be yours</h4><p>An isolator that's merely switched off invites someone who doesn't know you're working to switch it back — for a test, to 'just check something', or by mistake. A lock with the key in your pocket makes that impossible, not just unlikely.</p>
+<h4>Discipline</h4><p>Your lock goes on when you isolate and comes off only when you personally have finished and are clear. Never lend your key, never leave the lock on for someone else to remove — the whole system rests on one person controlling one lock.</p>`,
+// 2 tag
+`<h4>Warn versus secure</h4><p>A caution tag communicates: this is isolated, by whom, when and why. That's genuinely useful — but it is information, not a barrier. Anyone can read it and still operate the switch.</p>
+<h4>Always with a lock</h4><p>The tag rides alongside the lock, never instead of it. The lock physically prevents re-energising; the tag explains the situation so nobody is tempted to cut the lock off or hunt for another way to restore supply.</p>
+<h4>What goes on it</h4><p>Your name, the date and time, and enough about the work that someone finding it understands why it must stay off. A blank or vague tag invites someone to assume it's stale and remove it.</p>`,
+// 3 hasp / multiple workers
+`<h4>The group problem</h4><p>When several people work on the same isolated plant, a single lock can't represent all of them — whoever holds it might remove it while others are still inside or on the tools.</p>
+<h4>The hasp solution</h4><p>A lock-off hasp (a scissor/multi-hole clasp) accepts many padlocks at once. Each worker fits their own personal lock. Because the hasp can't be opened until the last padlock is removed, the supply cannot be restored while anyone's lock is still on.</p>
+<h4>Own your lock</h4><p>Each person applies and removes only their own lock, when they personally are clear. Nobody removes another's lock. It turns a group isolation into a set of individual guarantees.</p>`,
+// 4 permit to work
+`<h4>What it is</h4><p>A permit to work is a formal, documented authorisation for defined higher-risk work. It records exactly what may be worked on, what has been isolated and secured, the precautions required, and the time limits — and it's signed as it's issued, accepted, and handed back.</p>
+<h4>When you need one</h4><p>HV work, complex or multiple isolations, confined spaces, work on shared or interlinked plant, or anywhere the consequences of a mistake are severe. It formalises the control that a simple lock-off can't fully capture on its own.</p>
+<h4>Why it works</h4><p>It forces the isolations and precautions to be thought through, written down, checked and signed — and it makes crystal clear who is in control of the plant at any moment, so two teams can't unknowingly work against each other.</p>`,
+// 5 prove test prove
+`<h4>Three steps, one purpose</h4><p>Prove the voltage indicator on a known source or proving unit so you know it works. Test the isolated circuit — it should read dead. Prove the indicator again to confirm it was still working when it told you 'dead'.</p>
+<h4>The middle step is the weak one</h4><p>A dead reading is meaningless on its own — a broken tester reads dead too. It's the two proves either side that turn a blank reading into a trustworthy 'this is safe'. Never test without both.</p>
+<h4>Every time</h4><p>Not once at the start of the job — every isolation, every set of conductors, right before you touch them. The routine is quick precisely so there's no excuse to skip it.</p>`,
+// 6 prove twice
+`<h4>The failure it guards against</h4><p>Test equipment can die silently: a fuse blows, a lead breaks internally, a battery goes flat. If that happens after you proved the tester but before or during the test, the circuit could be live and your tester would still read 'dead'.</p>
+<h4>Why the after-prove closes it</h4><p>Proving the tester again on a known source straight after testing confirms it was still functioning at the moment it read dead. Now a dead reading can only mean the circuit really is dead — not that the tester quit.</p>
+<h4>No shortcuts</h4><p>This is the single step people are most tempted to drop, and it's the one that has killed. Prove after, always, before you put a hand near a conductor.</p>`,
+// 7 single phase test
+`<h4>Test every pair</h4><p>On a single-phase circuit that's line, neutral and earth — so the tests are L–N, L–E and N–E. Three quick checks that leave no conductor unproven.</p>
+<h4>Why neutral isn't a free pass</h4><p>Neutral is not automatically dead. A shared or borrowed neutral from another circuit, a wiring error, or a backfeed can leave it live even when 'the' line is isolated. Prove it like any other conductor.</p>
+<h4>Don't assume identity</h4><p>Colours get reused, cables get re-terminated, mistakes happen. Testing every combination means you don't have to trust that the conductor labelled neutral actually is one.</p>`,
+// 8 three phase test
+`<h4>All ten</h4><p>Three phases, neutral and earth give ten combinations: L1–L2, L2–L3, L1–L3, then L1–N, L2–N, L3–N, then L1–E, L2–E, L3–E, and finally N–E. Prove each one dead.</p>
+<h4>Why be exhaustive</h4><p>You're proving that no conductor holds a voltage relative to any other or to earth. A single skipped pair — say you tested phase-to-phase but not phase-to-earth — is precisely where a backfed or crossed conductor hides.</p>
+<h4>Method beats memory</h4><p>Work a consistent pattern every time (phases together, then each to neutral, then each to earth, then neutral to earth) so you never lose your place and never leave one out.</p>`,
+// 9 proving unit / known source
+`<h4>The reference problem</h4><p>Prove–test–prove needs something you know is live to prove the tester against. If you use a 'known live' source that has quietly gone dead, your working tester reads nothing and you'll conclude it's faulty — undermining the whole check.</p>
+<h4>Why a proving unit wins</h4><p>A proving unit generates its own voltage on demand, so it's a reliable, self-contained reference you carry with you. No hunting for a live socket, no doubt about whether the source was really live.</p>
+<h4>If you must use a live source</h4><p>Only one you're certain is live and safe to prove on. But the proving unit is there precisely so you don't have to make that judgement in the field — use it.</p>`,
+// 10 GS38
+`<h4>What it covers</h4><p>GS38 is HSE guidance on the test equipment used by people working on or near low-voltage systems — voltage indicators, probes, leads and accessories. Its whole aim is to reduce the risk that the act of testing itself causes a shock or an arc flash.</p>
+<h4>Why it exists</h4><p>Poor test gear has hurt and killed people: long exposed probe tips shorting terminals, unfused leads feeding an arc, meters not rated for the fault energy present. GS38 sets out what good equipment looks like.</p>
+<h4>How you meet it</h4><p>Use voltage indicators and leads described as 'to GS38' — shrouded fused probes, finger barriers, current-limited leads — and use them within their category and voltage rating. It's the practical baseline for the proving you do every day.</p>`,
+// 11 two-pole vs multimeter
+`<h4>Purpose-built vs general-purpose</h4><p>A two-pole voltage indicator does one job: show, clearly, whether voltage is present. There's no range dial, no AC/DC selector, no continuity mode to be caught in — fewer settings means fewer ways to be misled.</p>
+<h4>How a multimeter fools you</h4><p>Left on the wrong range or function, on resistance instead of volts, or with a flat battery, a multimeter can read zero on a live circuit. It's a superb measuring instrument and a poor proving-dead tool for exactly that reason.</p>
+<h4>The right tool</h4><p>For proving dead, reach for the two-pole tester to GS38 and prove it before and after. Save the multimeter for when you actually need a number, not a life-or-death yes/no.</p>`,
+// 12 proving unit deep
+`<h4>What it is</h4><p>A small device that outputs a voltage sufficient to light up (or trigger) your voltage indicator, so you can confirm the tester works on demand — no external supply required.</p>
+<h4>Why it matters</h4><p>It makes the two 'proves' in prove–test–prove trivial and reliable. You're no longer dependent on finding a live source you trust, which removes a real source of error and hesitation from the routine.</p>
+<h4>Use it right</h4><p>Prove the tester on it immediately before testing the circuit and immediately after. Keep it with the tester so the whole prove–test–prove kit lives together — the routine only works if the proving reference is always to hand.</p>`,
+// 13 probe requirements
+`<h4>The tip</h4><p>Exposed metal at the probe tip is kept to a minimum — shrouded or spring-loaded so only a millimetre or two protrudes. Long bare tips bridge adjacent terminals and cause the flashover they're meant to help you avoid.</p>
+<h4>The leads</h4><p>Insulated, and fused or current-limited with HRC (high rupturing capacity) fuses, so that if the probes do short something the lead can't feed a large fault current into an arc. Finger barriers keep your hands back from the tips.</p>
+<h4>Why so fussy</h4><p>At the energies present in real installations, a slip with poor test gear can produce an arc flash, not just a spark. Every one of these features exists because the alternative has burned or electrocuted someone.</p>`,
+// 14 CAT ratings
+`<h4>What the category means</h4><p>Measurement categories rate how much transient over-voltage (a spike from a fault or switching event) the instrument can survive at a given location. Higher category = closer to the source = bigger potential transients to withstand.</p>
+<h4>III vs IV</h4><p>CAT III covers the fixed installation and distribution — sub-boards, fixed loads, motors. CAT IV covers the origin of the installation — the service entrance, main incomer, metering, where the available fault energy is greatest.</p>
+<h4>Get it right</h4><p>Use gear rated for both the category of the location and the voltage. A CAT III-rated meter taken to a CAT IV position can be overwhelmed by a transient and flash over internally — with your hands on it. When in doubt, rate up.</p>`,
+// 15 stored charge
+`<h4>Off isn't discharged</h4><p>Drives, switch-mode power supplies and capacitor banks store energy in their DC-link capacitors. Opening the isolator removes the supply but leaves that charge sitting on the terminals — often at a lethal voltage — for minutes afterward.</p>
+<h4>Wait, then prove</h4><p>Respect the manufacturer's stated discharge time before opening the unit, and then prove dead at the actual DC terminals with a suitable tester. Don't rely on bleed resistors having done their job — they fail, and rushing kills.</p>
+<h4>Treat every drive this way</h4><p>Assume any drive or capacitive equipment holds a charge until you've proved otherwise at the terminals. This is one of the most common ways experienced people get caught — 'it's been off for ages' is not proof.</p>`,
+// 16 backfeed
+`<h4>Dead here, live from there</h4><p>A conductor can read dead at the main isolator yet be energised from somewhere else — a UPS or inverter, a standby generator, a control supply fed from another panel, or a shared neutral carrying current from an adjacent circuit.</p>
+<h4>Isolate all sources</h4><p>Trace and isolate every source that can feed the point you're working on, not just the obvious incomer. Interlinked machines and automatic standby supplies are the usual surprises.</p>
+<h4>Prove dead catches it</h4><p>This is one big reason the prove-dead step is non-negotiable: it's your last line of defence against a backfeed you didn't know existed. If a conductor you expected dead reads live, stop and find out why before going further.</p>`,
+// 17 multiple supplies
+`<h4>Rarely just one feed</h4><p>Modern machines commonly have more than one supply: a main power incomer, a separate control transformer (sometimes fed from a different board), an independent 24 V supply, or panels interlocked with neighbours. Killing one doesn't kill them all.</p>
+<h4>Find them first</h4><p>Read the schematics and trace the supplies before you isolate, so you know every point that needs locking off. A machine that's 'dead' on its main isolator can still have a live control circuit or a second incomer.</p>
+<h4>Lock every one</h4><p>Each identified source gets isolated, locked and tagged. Then prove dead at the point of work to confirm you found them all — the drawings might be out of date, but a proven dead reading isn't.</p>`,
+// 18 non-electrical energy
+`<h4>Electrical isolation is only half of it</h4><p>Cutting the power leaves plenty of other energy stored and ready to release: compressed air in a receiver or cylinder, hydraulic pressure in an accumulator, a compressed or extended spring, a raised or suspended load under gravity, and the inertia of anything still spinning.</p>
+<h4>Make it all safe</h4><p>Vent and lock off pneumatics and hydraulics, block or support raised loads, release or restrain springs, and let rotating masses come to a genuine stop (or lock them). Each of these can move a guard, a ram or a tool with the power fully off.</p>
+<h4>Think 'all energy'</h4><p>A complete isolation addresses every energy source that could cause harm, not just the electrical one. Ask what could still move, fall, spring or spin — then make each of those safe before you commit your hands.</p>`,
+// 19 never assume
+`<h4>Trust nothing you didn't prove</h4><p>Someone telling you it's isolated is not proof. Isolations get reversed, the wrong breaker gets locked, tags get moved, drawings mislead. The gap between 'it should be dead' and 'it is dead' is exactly where people are hurt.</p>
+<h4>Dead working is the default</h4><p>Work on it dead unless there's a rare, specifically justified and controlled reason to work live. And 'dead' means you proved it — with your own tester, using prove–test–prove, at the point you're about to touch, just before you touch it.</p>
+<h4>Own the check</h4><p>The only isolation you can rely on is the one you verified yourself, now. It takes a minute and it's the minute that keeps you alive — no deadline, no colleague's assurance and no production pressure is worth skipping it.</p>`
+  ] }
+];
+let CARDS, CATS;
+DECKS.forEach(d=>{ d.cards.forEach((c,i)=>{ c.more=d.more[i]; }); });
+
+/* ---------------- schematic ---------------- */
+function schematic(kind){
+  const BN="#C0803F", BU="#3B8CD1", BK="#C9CDD4", AM="#F0B429", GN="#4FA96A", RD="#E05646", muted="#8B929C";
+  if(kind==="colours"){
+    return `<svg viewBox="0 0 280 150" role="img" aria-label="Wire colour legend">
+      <line x1="40" y1="30" x2="240" y2="30" stroke="${BN}" stroke-width="6" stroke-linecap="round"/>
+      <text x="40" y="22" fill="${BN}" font-size="11">BROWN</text>
+      <text x="240" y="22" fill="${muted}" font-size="11" text-anchor="end">+24V  L+</text>
+      <line x1="40" y1="75" x2="240" y2="75" stroke="${BK}" stroke-width="6" stroke-linecap="round"/>
+      <text x="40" y="67" fill="${BK}" font-size="11">BLACK</text>
+      <text x="240" y="67" fill="${muted}" font-size="11" text-anchor="end">OUTPUT  signal</text>
+      <line x1="40" y1="120" x2="240" y2="120" stroke="${BU}" stroke-width="6" stroke-linecap="round"/>
+      <text x="40" y="112" fill="${BU}" font-size="11">BLUE</text>
+      <text x="240" y="112" fill="${muted}" font-size="11" text-anchor="end">0V  L−</text>
+    </svg>`;
+  }
+  if(kind==="pnp"||kind==="npn"){
+    const pnp = kind==="pnp";
+    const topLabel = pnp ? "SENSOR" : "LOAD";
+    const botLabel = pnp ? "LOAD"   : "SENSOR";
+    const cx=140;
+    return `<svg viewBox="0 0 280 210" role="img" aria-label="${kind.toUpperCase()} wiring schematic">
+      <line x1="20" y1="26" x2="260" y2="26" stroke="${BN}" stroke-width="5" stroke-linecap="round"/>
+      <text x="24" y="18" fill="${BN}" font-size="10">BN +24V</text>
+      <line x1="20" y1="184" x2="260" y2="184" stroke="${BU}" stroke-width="5" stroke-linecap="round"/>
+      <text x="24" y="203" fill="${BU}" font-size="10">BU 0V</text>
+      <line x1="${cx}" y1="26" x2="${cx}" y2="62" stroke="${muted}" stroke-width="2"/>
+      <line x1="${cx}" y1="148" x2="${cx}" y2="184" stroke="${muted}" stroke-width="2"/>
+      <rect x="${cx-46}" y="62" width="92" height="34" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="${cx}" y="83" fill="#E9E7E2" font-size="12" text-anchor="middle" font-weight="600">${topLabel}</text>
+      <line x1="${cx}" y1="96" x2="${cx}" y2="114" stroke="${BK}" stroke-width="3"/>
+      <line x1="${cx}" y1="105" x2="238" y2="105" stroke="${BK}" stroke-width="3"/>
+      <circle cx="${cx}" cy="105" r="4.5" fill="${BK}"/>
+      <text x="242" y="102" fill="${BK}" font-size="10">BK</text>
+      <text x="242" y="114" fill="${muted}" font-size="9">signal</text>
+      <rect x="${cx-46}" y="114" width="92" height="34" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="${cx}" y="135" fill="#E9E7E2" font-size="12" text-anchor="middle" font-weight="600">${botLabel}</text>
+    </svg>`;
+  }
+  if(kind==="loop"){
+    return `<svg viewBox="0 0 280 176" role="img" aria-label="4-20 mA two-wire current loop">
+      <rect x="18" y="30" width="96" height="34" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="66" y="51" fill="#E9E7E2" font-size="11" text-anchor="middle">24V SUPPLY</text>
+      <rect x="166" y="30" width="96" height="34" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="214" y="51" fill="#E9E7E2" font-size="11" text-anchor="middle">TRANSMITTER</text>
+      <rect x="166" y="118" width="96" height="34" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="214" y="134" fill="#E9E7E2" font-size="10" text-anchor="middle">PLC INPUT</text>
+      <text x="214" y="147" fill="${muted}" font-size="9" text-anchor="middle">250 Ω sense</text>
+      <line x1="114" y1="47" x2="166" y2="47" stroke="${BN}" stroke-width="3"/>
+      <line x1="214" y1="64" x2="214" y2="118" stroke="${BK}" stroke-width="3"/>
+      <line x1="166" y1="135" x2="66" y2="135" stroke="${BU}" stroke-width="3"/>
+      <line x1="66" y1="135" x2="66" y2="64" stroke="${BU}" stroke-width="3"/>
+      <text x="120" y="98" fill="${AM}" font-size="12" text-anchor="middle" font-weight="600">4–20 mA</text>
+      <text x="120" y="113" fill="${muted}" font-size="9" text-anchor="middle">same current all the way round</text>
+    </svg>`;
+  }
+  if(kind==="livezero"){
+    return `<svg viewBox="0 0 280 120" role="img" aria-label="4-20 mA live-zero scale">
+      <rect x="24" y="42" width="40" height="20" fill="${RD}" opacity="0.45"/>
+      <rect x="64" y="42" width="164" height="20" fill="${GN}" opacity="0.5"/>
+      <rect x="228" y="42" width="28" height="20" fill="${RD}" opacity="0.45"/>
+      <line x1="24" y1="62" x2="256" y2="62" stroke="${muted}" stroke-width="1"/>
+      <text x="64" y="36" fill="${AM}" font-size="11" text-anchor="middle" font-weight="600">4 mA</text>
+      <text x="64" y="80" fill="${muted}" font-size="9" text-anchor="middle">0%</text>
+      <text x="228" y="36" fill="${AM}" font-size="11" text-anchor="middle" font-weight="600">20 mA</text>
+      <text x="228" y="80" fill="${muted}" font-size="9" text-anchor="middle">100%</text>
+      <text x="42" y="80" fill="${RD}" font-size="8" text-anchor="middle">≤3.6</text>
+      <text x="244" y="80" fill="${RD}" font-size="8" text-anchor="middle">≥21</text>
+      <text x="140" y="104" fill="${muted}" font-size="9" text-anchor="middle">fault zones flank the live band · NAMUR NE43</text>
+    </svg>`;
+  }
+  if(kind==="iolink"){
+    return `<svg viewBox="0 0 280 150" role="img" aria-label="IO-Link master to device on three wires">
+      <defs>
+        <marker id="ioL" markerWidth="8" markerHeight="8" refX="2" refY="4" orient="auto"><path d="M8,0 L0,4 L8,8 Z" fill="${BK}"/></marker>
+        <marker id="ioR" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="${BK}"/></marker>
+      </defs>
+      <rect x="14" y="50" width="72" height="50" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="50" y="79" fill="#E9E7E2" font-size="11" text-anchor="middle">MASTER</text>
+      <rect x="194" y="50" width="72" height="50" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="230" y="79" fill="#E9E7E2" font-size="11" text-anchor="middle">DEVICE</text>
+      <line x1="86" y1="58" x2="194" y2="58" stroke="${BN}" stroke-width="3"/>
+      <text x="140" y="52" fill="${BN}" font-size="9" text-anchor="middle">BN  +24V</text>
+      <line x1="98" y1="75" x2="182" y2="75" stroke="${BK}" stroke-width="3" marker-start="url(#ioL)" marker-end="url(#ioR)"/>
+      <text x="140" y="92" fill="${BK}" font-size="9" text-anchor="middle">BK  C/Q  serial data</text>
+      <line x1="86" y1="100" x2="194" y2="100" stroke="${BU}" stroke-width="3"/>
+      <text x="140" y="118" fill="${BU}" font-size="9" text-anchor="middle">BU  0V</text>
+    </svg>`;
+  }
+  if(kind==="dualchannel"){
+    return `<svg viewBox="0 0 280 200" role="img" aria-label="dual-channel e-stop into a safety relay">
+      <text x="18" y="20" fill="${muted}" font-size="10">+24V</text>
+      <line x1="18" y1="26" x2="58" y2="26" stroke="${GN}" stroke-width="3"/>
+      <line x1="58" y1="26" x2="58" y2="122" stroke="${GN}" stroke-width="3"/>
+      <rect x="40" y="44" width="74" height="98" rx="6" fill="none" stroke="${RD}" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <text x="77" y="158" fill="${RD}" font-size="10" text-anchor="middle">E-STOP</text>
+      <line x1="58" y1="66" x2="88" y2="66" stroke="${GN}" stroke-width="3"/>
+      <line x1="88" y1="59" x2="104" y2="72" stroke="${GN}" stroke-width="3"/>
+      <line x1="104" y1="66" x2="168" y2="66" stroke="${GN}" stroke-width="3"/>
+      <text x="150" y="59" fill="${muted}" font-size="9" text-anchor="end">CH1 · S11–S12</text>
+      <line x1="58" y1="118" x2="88" y2="118" stroke="${GN}" stroke-width="3"/>
+      <line x1="88" y1="111" x2="104" y2="124" stroke="${GN}" stroke-width="3"/>
+      <line x1="104" y1="118" x2="168" y2="118" stroke="${GN}" stroke-width="3"/>
+      <text x="150" y="135" fill="${muted}" font-size="9" text-anchor="end">CH2 · S21–S22</text>
+      <rect x="168" y="50" width="94" height="84" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="215" y="88" fill="#E9E7E2" font-size="11" text-anchor="middle">SAFETY</text>
+      <text x="215" y="102" fill="#E9E7E2" font-size="11" text-anchor="middle">RELAY</text>
+      <line x1="215" y1="134" x2="215" y2="160" stroke="${GN}" stroke-width="3"/>
+      <text x="215" y="174" fill="${muted}" font-size="9" text-anchor="middle">to contactors</text>
+      <text x="140" y="194" fill="${muted}" font-size="9" text-anchor="middle">one e-stop · two independent contacts</text>
+    </svg>`;
+  }
+  if(kind==="edm"){
+    return `<svg viewBox="0 0 280 190" role="img" aria-label="EDM feedback loop from contactors to safety relay">
+      <rect x="14" y="30" width="86" height="52" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="57" y="51" fill="#E9E7E2" font-size="10" text-anchor="middle">SAFETY</text>
+      <text x="57" y="65" fill="#E9E7E2" font-size="10" text-anchor="middle">RELAY</text>
+      <line x1="100" y1="45" x2="150" y2="45" stroke="${GN}" stroke-width="3"/>
+      <rect x="150" y="30" width="56" height="30" rx="4" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="178" y="49" fill="#E9E7E2" font-size="10" text-anchor="middle">K1 · K2</text>
+      <line x1="206" y1="45" x2="250" y2="45" stroke="${GN}" stroke-width="3"/>
+      <text x="250" y="38" fill="${muted}" font-size="9" text-anchor="end">motor</text>
+      <line x1="178" y1="60" x2="178" y2="150" stroke="${AM}" stroke-width="2.5"/>
+      <line x1="178" y1="150" x2="57" y2="150" stroke="${AM}" stroke-width="2.5"/>
+      <line x1="57" y1="150" x2="57" y2="82" stroke="${AM}" stroke-width="2.5"/>
+      <line x1="104" y1="157" x2="120" y2="144" stroke="${AM}" stroke-width="2.5"/>
+      <text x="140" y="172" fill="${AM}" font-size="9" text-anchor="middle">force-guided aux NC · EDM loop</text>
+      <text x="140" y="185" fill="${muted}" font-size="9" text-anchor="middle">welded contact → loop stays open → no reset</text>
+    </svg>`;
+  }
+  if(kind==="lightcurtain"){
+    return `<svg viewBox="0 0 280 168" role="img" aria-label="safety light curtain with a broken beam">
+      <rect x="26" y="22" width="16" height="98" rx="3" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="34" y="136" fill="${muted}" font-size="9" text-anchor="middle">TX</text>
+      <rect x="170" y="22" width="16" height="98" rx="3" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="178" y="136" fill="${muted}" font-size="9" text-anchor="middle">RX</text>
+      <line x1="42" y1="36" x2="170" y2="36" stroke="${GN}" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <line x1="42" y1="60" x2="170" y2="60" stroke="${RD}" stroke-width="2" stroke-dasharray="5 4"/>
+      <line x1="42" y1="84" x2="170" y2="84" stroke="${GN}" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <line x1="42" y1="108" x2="170" y2="108" stroke="${GN}" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <circle cx="106" cy="60" r="9" fill="${RD}" opacity="0.55"/>
+      <line x1="186" y1="52" x2="234" y2="52" stroke="${BK}" stroke-width="2.5"/>
+      <line x1="186" y1="68" x2="234" y2="68" stroke="${BK}" stroke-width="2.5"/>
+      <text x="238" y="55" fill="${BK}" font-size="9">OSSD1</text>
+      <text x="238" y="71" fill="${BK}" font-size="9">OSSD2</text>
+      <text x="140" y="158" fill="${muted}" font-size="9" text-anchor="middle">break a beam → OSSDs off → stop · S = K·T + C</text>
+    </svg>`;
+  }
+  if(kind==="dcbus"){
+    return `<svg viewBox="0 0 280 150" role="img" aria-label="VFD power circuit: rectifier, DC bus, braking chopper, inverter, motor">
+      <text x="6" y="40" fill="${muted}" font-size="8">L1</text>
+      <text x="6" y="55" fill="${muted}" font-size="8">L2</text>
+      <text x="6" y="70" fill="${muted}" font-size="8">L3</text>
+      <line x1="18" y1="37" x2="44" y2="37" stroke="${muted}" stroke-width="1.8"/>
+      <line x1="18" y1="52" x2="44" y2="52" stroke="${muted}" stroke-width="1.8"/>
+      <line x1="18" y1="67" x2="44" y2="67" stroke="${muted}" stroke-width="1.8"/>
+      <rect x="44" y="30" width="36" height="46" rx="4" fill="#232730" stroke="${muted}" stroke-width="1.4"/>
+      <text x="62" y="56" fill="#E9E7E2" font-size="8" text-anchor="middle">RECT</text>
+      <line x1="80" y1="38" x2="210" y2="38" stroke="${AM}" stroke-width="2.4"/>
+      <line x1="80" y1="68" x2="210" y2="68" stroke="${BU}" stroke-width="2.4"/>
+      <text x="88" y="32" fill="${AM}" font-size="8">DC+  ~565 V</text>
+      <text x="88" y="80" fill="${BU}" font-size="8">DC−</text>
+      <line x1="120" y1="38" x2="120" y2="49" stroke="${muted}" stroke-width="1.6"/>
+      <line x1="112" y1="49" x2="128" y2="49" stroke="${muted}" stroke-width="1.6"/>
+      <line x1="112" y1="53" x2="128" y2="53" stroke="${muted}" stroke-width="1.6"/>
+      <line x1="120" y1="53" x2="120" y2="68" stroke="${muted}" stroke-width="1.6"/>
+      <line x1="168" y1="38" x2="168" y2="47" stroke="${RD}" stroke-width="1.6"/>
+      <path d="M162,47 l12,3 l-12,3 l12,3" fill="none" stroke="${RD}" stroke-width="1.3"/>
+      <line x1="168" y1="59" x2="168" y2="68" stroke="${RD}" stroke-width="1.6"/>
+      <text x="176" y="55" fill="${RD}" font-size="8">brake R</text>
+      <rect x="210" y="30" width="32" height="46" rx="4" fill="#232730" stroke="${muted}" stroke-width="1.4"/>
+      <text x="226" y="56" fill="#E9E7E2" font-size="8" text-anchor="middle">INV</text>
+      <line x1="242" y1="53" x2="254" y2="53" stroke="${muted}" stroke-width="1.8"/>
+      <circle cx="264" cy="53" r="10" fill="none" stroke="${GN}" stroke-width="1.6"/>
+      <text x="264" y="57" fill="${GN}" font-size="9" text-anchor="middle">M</text>
+      <text x="140" y="104" fill="${muted}" font-size="9" text-anchor="middle">rectifier → DC bus → inverter → motor</text>
+      <text x="140" y="122" fill="${muted}" font-size="9" text-anchor="middle">regen on decel lifts DC+ → brake R dumps it → no F30002</text>
+    </svg>`;
+  }
+  if(kind==="vfcurve"){
+    return `<svg viewBox="0 0 280 170" role="img" aria-label="V/f curve: voltage against frequency">
+      <line x1="42" y1="128" x2="250" y2="128" stroke="${muted}" stroke-width="1.5"/>
+      <line x1="42" y1="128" x2="42" y2="30" stroke="${muted}" stroke-width="1.5"/>
+      <text x="150" y="150" fill="${muted}" font-size="9" text-anchor="middle">frequency (Hz)</text>
+      <text x="20" y="80" fill="${muted}" font-size="9" text-anchor="middle" transform="rotate(-90 20 80)">voltage</text>
+      <line x1="42" y1="128" x2="152" y2="52" stroke="${AM}" stroke-width="2.5"/>
+      <line x1="152" y1="52" x2="240" y2="52" stroke="${AM}" stroke-width="2.5" stroke-dasharray="5 3"/>
+      <line x1="152" y1="128" x2="152" y2="52" stroke="${muted}" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="152" y="141" fill="${muted}" font-size="8" text-anchor="middle">50 Hz</text>
+      <line x1="42" y1="52" x2="152" y2="52" stroke="${muted}" stroke-width="1" stroke-dasharray="3 3"/>
+      <text x="38" y="55" fill="${muted}" font-size="8" text-anchor="end">400 V</text>
+      <text x="96" y="98" fill="${AM}" font-size="9" text-anchor="middle">constant V/f</text>
+      <text x="196" y="46" fill="${muted}" font-size="8" text-anchor="middle">field weakening</text>
+      <text x="150" y="166" fill="${muted}" font-size="8" text-anchor="middle">constant torque below base · constant power above</text>
+    </svg>`;
+  }
+  if(kind==="ramps"){
+    return `<svg viewBox="0 0 280 170" role="img" aria-label="speed ramp trapezoid: ramp up and ramp down">
+      <line x1="40" y1="120" x2="252" y2="120" stroke="${muted}" stroke-width="1.5"/>
+      <line x1="40" y1="120" x2="40" y2="30" stroke="${muted}" stroke-width="1.5"/>
+      <text x="150" y="142" fill="${muted}" font-size="9" text-anchor="middle">time</text>
+      <text x="22" y="76" fill="${muted}" font-size="9" text-anchor="middle" transform="rotate(-90 22 76)">speed</text>
+      <line x1="40" y1="120" x2="110" y2="45" stroke="${GN}" stroke-width="2.5"/>
+      <line x1="110" y1="45" x2="185" y2="45" stroke="${GN}" stroke-width="2.5"/>
+      <line x1="185" y1="45" x2="245" y2="120" stroke="${GN}" stroke-width="2.5"/>
+      <text x="66" y="92" fill="${AM}" font-size="8" text-anchor="middle">p1120 ↑</text>
+      <text x="222" y="92" fill="${AM}" font-size="8" text-anchor="middle">p1121 ↓</text>
+      <text x="150" y="160" fill="${muted}" font-size="8" text-anchor="middle">up too fast → F30001 · down too fast → F30002</text>
+    </svg>`;
+  }
+  if(kind==="lockoff"){
+    return `<svg viewBox="0 0 280 158" role="img" aria-label="isolator locked off with a hasp and personal padlocks">
+      <rect x="18" y="48" width="62" height="62" rx="5" fill="#232730" stroke="${muted}" stroke-width="1.5"/>
+      <text x="49" y="74" fill="#E9E7E2" font-size="9" text-anchor="middle">ISOLATOR</text>
+      <text x="49" y="92" fill="${RD}" font-size="11" text-anchor="middle" font-weight="600">OFF</text>
+      <rect x="104" y="60" width="66" height="38" rx="7" fill="none" stroke="${AM}" stroke-width="2"/>
+      <circle cx="120" cy="79" r="5" fill="none" stroke="${AM}" stroke-width="1.6"/>
+      <circle cx="137" cy="79" r="5" fill="none" stroke="${AM}" stroke-width="1.6"/>
+      <circle cx="154" cy="79" r="5" fill="none" stroke="${AM}" stroke-width="1.6"/>
+      <text x="137" y="112" fill="${muted}" font-size="8" text-anchor="middle">lock-off hasp</text>
+      <rect x="188" y="58" width="18" height="15" rx="2" fill="${GN}" opacity="0.85"/>
+      <path d="M191,58 v-4 a6,6 0 0 1 12,0 v4" fill="none" stroke="${GN}" stroke-width="2"/>
+      <rect x="210" y="74" width="18" height="15" rx="2" fill="${BU}" opacity="0.85"/>
+      <path d="M213,74 v-4 a6,6 0 0 1 12,0 v4" fill="none" stroke="${BU}" stroke-width="2"/>
+      <rect x="232" y="58" width="18" height="15" rx="2" fill="${RD}" opacity="0.85"/>
+      <path d="M235,58 v-4 a6,6 0 0 1 12,0 v4" fill="none" stroke="${RD}" stroke-width="2"/>
+      <text x="219" y="112" fill="${muted}" font-size="8" text-anchor="middle">one personal lock each</text>
+      <text x="140" y="138" fill="${muted}" font-size="9" text-anchor="middle">isolate · lock off · tag · nobody re-energises</text>
+    </svg>`;
+  }
+  if(kind==="provetest"){
+    return `<svg viewBox="0 0 280 148" role="img" aria-label="prove test prove sequence">
+      <defs><marker id="ptm" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="${muted}"/></marker></defs>
+      <text x="49" y="34" fill="${GN}" font-size="9" text-anchor="middle" font-weight="600">PROVE</text>
+      <rect x="14" y="40" width="70" height="48" rx="5" fill="#232730" stroke="${GN}" stroke-width="1.5"/>
+      <text x="49" y="60" fill="#E9E7E2" font-size="8" text-anchor="middle">tester on</text>
+      <text x="49" y="71" fill="#E9E7E2" font-size="8" text-anchor="middle">proving unit</text>
+      <text x="49" y="83" fill="${GN}" font-size="8" text-anchor="middle">works</text>
+      <line x1="86" y1="64" x2="102" y2="64" stroke="${muted}" stroke-width="2" marker-end="url(#ptm)"/>
+      <text x="140" y="34" fill="${AM}" font-size="9" text-anchor="middle" font-weight="600">TEST</text>
+      <rect x="105" y="40" width="70" height="48" rx="5" fill="#232730" stroke="${AM}" stroke-width="1.5"/>
+      <text x="140" y="60" fill="#E9E7E2" font-size="8" text-anchor="middle">tester on</text>
+      <text x="140" y="71" fill="#E9E7E2" font-size="8" text-anchor="middle">circuit</text>
+      <text x="140" y="83" fill="${muted}" font-size="8" text-anchor="middle">dead?</text>
+      <line x1="177" y1="64" x2="193" y2="64" stroke="${muted}" stroke-width="2" marker-end="url(#ptm)"/>
+      <text x="231" y="34" fill="${GN}" font-size="9" text-anchor="middle" font-weight="600">PROVE</text>
+      <rect x="196" y="40" width="70" height="48" rx="5" fill="#232730" stroke="${GN}" stroke-width="1.5"/>
+      <text x="231" y="60" fill="#E9E7E2" font-size="8" text-anchor="middle">tester on</text>
+      <text x="231" y="71" fill="#E9E7E2" font-size="8" text-anchor="middle">proving unit</text>
+      <text x="231" y="83" fill="${GN}" font-size="8" text-anchor="middle">still works</text>
+      <text x="140" y="120" fill="${muted}" font-size="9" text-anchor="middle">only now is the dead reading trustworthy</text>
+    </svg>`;
+  }
+  if(kind==="testpoints"){
+    return `<svg viewBox="0 0 280 175" role="img" aria-label="three-phase prove-dead test points, every pair">
+      <line x1="140" y1="30" x2="192" y2="68" stroke="${muted}" stroke-width="1"/>
+      <line x1="140" y1="30" x2="172" y2="128" stroke="${muted}" stroke-width="1"/>
+      <line x1="140" y1="30" x2="108" y2="128" stroke="${muted}" stroke-width="1"/>
+      <line x1="140" y1="30" x2="88" y2="68" stroke="${muted}" stroke-width="1"/>
+      <line x1="192" y1="68" x2="172" y2="128" stroke="${muted}" stroke-width="1"/>
+      <line x1="192" y1="68" x2="108" y2="128" stroke="${muted}" stroke-width="1"/>
+      <line x1="192" y1="68" x2="88" y2="68" stroke="${muted}" stroke-width="1"/>
+      <line x1="172" y1="128" x2="108" y2="128" stroke="${muted}" stroke-width="1"/>
+      <line x1="172" y1="128" x2="88" y2="68" stroke="${muted}" stroke-width="1"/>
+      <line x1="108" y1="128" x2="88" y2="68" stroke="${muted}" stroke-width="1"/>
+      <circle cx="140" cy="30" r="12" fill="#232730" stroke="${AM}" stroke-width="1.6"/><text x="140" y="34" fill="${AM}" font-size="9" text-anchor="middle">L1</text>
+      <circle cx="192" cy="68" r="12" fill="#232730" stroke="${AM}" stroke-width="1.6"/><text x="192" y="72" fill="${AM}" font-size="9" text-anchor="middle">L2</text>
+      <circle cx="172" cy="128" r="12" fill="#232730" stroke="${AM}" stroke-width="1.6"/><text x="172" y="132" fill="${AM}" font-size="9" text-anchor="middle">L3</text>
+      <circle cx="108" cy="128" r="12" fill="#232730" stroke="${BU}" stroke-width="1.6"/><text x="108" y="132" fill="${BU}" font-size="9" text-anchor="middle">N</text>
+      <circle cx="88" cy="68" r="12" fill="#232730" stroke="${GN}" stroke-width="1.6"/><text x="88" y="72" fill="${GN}" font-size="9" text-anchor="middle">E</text>
+      <text x="140" y="166" fill="${muted}" font-size="9" text-anchor="middle">every conductor to every other + earth = 10 tests</text>
+    </svg>`;
+  }
+  return "";
+}
+
+/* ---------------- state ---------------- */
+let filter="ALL";
+let order=[];
+let pos=0;
+let flipped=false;
+let reviewOnly=false;
+let marks={}; // active deck's recall marks
+let deckIx=0;
+const DECK_MARKS=[{},{},{},{},{}]; // per-deck marks, preserved when switching
+
+const $=id=>document.getElementById(id);
+const card=$("card");
+
+/* protect mixed-case units (e.g. mA) from the all-caps styling */
+function catLabel(cat){ return cat.replace(/mA/g, '<span class="lc">mA</span>'); }
+
+/* build category chips for the active deck */
+function buildChips(){
+  const wrap=$("chips"); wrap.innerHTML="";
+  const mk=(label,val)=>{
+    const b=document.createElement("button");
+    b.className="chip";b.innerHTML=label;b.dataset.val=val;
+    b.setAttribute("aria-pressed", val===filter);
+    b.onclick=()=>{filter=val;reviewOnly=false;$("reviewOnly").setAttribute("aria-pressed","false");rebuild();};
+    wrap.appendChild(b);
+  };
+  mk("All","ALL");
+  Object.keys(CATS).forEach(c=>mk(catLabel(c),c));
+}
+
+function activeList(){
+  let list=[...CARDS.keys()];
+  if(filter!=="ALL") list=list.filter(i=>CARDS[i].cat===filter);
+  if(reviewOnly) list=list.filter(i=>marks[i]==="rev");
+  return list;
+}
+
+function rebuild(){
+  closeMore();
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.val===filter));
+  order=activeList();
+  pos=0;flipped=false;
+  buildStrip();
+  render();
+}
+
+function buildStrip(){
+  const s=$("strip");s.innerHTML="";
+  order.forEach((idx,i)=>{
+    const seg=document.createElement("div");
+    seg.className="seg"+(marks[idx]==="got"?" got":marks[idx]==="rev"?" rev":"");
+    s.appendChild(seg);
+  });
+}
+function paintStrip(){
+  const segs=$("strip").children;
+  order.forEach((idx,i)=>{
+    let cls="seg";
+    if(i===pos) cls+=" cur";
+    else if(marks[idx]==="got") cls+=" got";
+    else if(marks[idx]==="rev") cls+=" rev";
+    segs[i].className=cls;
+  });
+}
+
+function render(){
+  const total=order.length;
+  if(total===0){
+    card.style.display="none";
+    if(!$("emptyMsg")){
+      const e=document.createElement("div");
+      e.className="empty";e.id="emptyMsg";
+      e.textContent="No cards here yet. Mark some for Review, or switch filter back to All.";
+      card.parentNode.appendChild(e);
+    }
+    $("sPos").textContent="–";
+    return;
+  }
+  const em=$("emptyMsg"); if(em) em.remove();
+  card.style.display="";
+
+  const idx=order[pos];
+  const c=CARDS[idx];
+  const col=CATS[c.cat].color;
+  card.style.setProperty("--cat",col);
+  card.classList.toggle("flip",flipped);
+
+  $("fcat").innerHTML=catLabel(c.cat);  $("bcat").innerHTML=catLabel(c.cat);
+  const nlabel=String(pos+1).padStart(2,"0")+" / "+String(total).padStart(2,"0");
+  $("fnum").textContent=nlabel; $("bnum").textContent=nlabel;
+  $("q").innerHTML=c.q;
+  $("a").innerHTML=c.a;
+
+  $("fig").innerHTML = c.wire ? `<div class="fig">${schematic(c.wire)}</div>` : "";
+
+  if(c.why){
+    $("why").innerHTML=`<div class="why${c.why.danger?" danger":""}"><div class="wl">${c.why.l}</div><p>${c.why.t}</p></div>`;
+  } else $("why").innerHTML="";
+
+  $("btnGot").classList.toggle("on",marks[idx]==="got");
+  $("btnRev").classList.toggle("on",marks[idx]==="rev");
+
+  $("prev").disabled = pos===0;
+  $("next").disabled = pos===total-1;
+  $("sPos").textContent=(pos+1)+"/"+total;
+  updateScore();
+  paintStrip();
+}
+
+function updateScore(){
+  let g=0,r=0;
+  Object.values(marks).forEach(v=>{v==="got"?g++:v==="rev"?r++:0});
+  $("sGot").textContent=g;$("sRev").textContent=r;
+}
+
+function doFlip(){ if(order.length===0) return; closeMore(); flipped=!flipped; card.classList.toggle("flip",flipped); }
+function go(d){
+  if(order.length===0) return;
+  const n=pos+d;
+  if(n<0||n>=order.length) return;
+  closeMore(); pos=n;flipped=false;render();
+}
+
+/* ---------------- deeper-dive sheet ---------------- */
+function openMore(){
+  if(order.length===0) return;
+  const c=CARDS[order[pos]];
+  if(!c.more) return;
+  $("sheetCat").innerHTML=catLabel(c.cat)+" · Deeper dive";
+  $("sheetTitle").textContent=c.q;
+  $("sheetBody").innerHTML=c.more;
+  $("sheetBody").scrollTop=0;
+  const w=$("sheetWrap");
+  w.classList.add("open"); w.setAttribute("aria-hidden","false");
+  $("sheetX").focus();
+}
+function closeMore(){
+  const w=$("sheetWrap");
+  if(!w.classList.contains("open")) return;
+  w.classList.remove("open"); w.setAttribute("aria-hidden","true");
+}
+function mark(kind){
+  if(order.length===0) return;
+  const idx=order[pos];
+  marks[idx]= marks[idx]===kind ? undefined : kind;
+  render();
+  // auto-advance after marking, if not last
+  if(marks[idx] && pos<order.length-1) setTimeout(()=>go(1),260);
+}
+
+/* ---------------- events ---------------- */
+card.addEventListener("click",e=>{ if(e.target.closest(".rbtn")||e.target.closest(".morebtn")) return; doFlip(); });
+card.addEventListener("keydown",e=>{
+  if(e.key===" "||e.key==="Enter"){e.preventDefault();doFlip();}
+});
+$("flip").onclick=doFlip;
+$("prev").onclick=()=>go(-1);
+$("next").onclick=()=>go(1);
+$("btnGot").onclick=e=>{e.stopPropagation();mark("got");};
+$("btnRev").onclick=e=>{e.stopPropagation();mark("rev");};
+$("moreBtn").onclick=e=>{e.stopPropagation();openMore();};
+$("sheetX").onclick=closeMore;
+$("sheetBd").onclick=closeMore;
+
+$("shuffle").onclick=()=>{
+  closeMore();
+  for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+  pos=0;flipped=false;buildStrip();render();
+};
+$("reviewOnly").onclick=function(){
+  reviewOnly=!reviewOnly;
+  this.setAttribute("aria-pressed",reviewOnly);
+  rebuild();
+};
+$("reset").onclick=()=>{
+  for(const k in marks) delete marks[k];
+  filter="ALL";reviewOnly=false;
+  $("reviewOnly").setAttribute("aria-pressed","false");
+  order=[...CARDS.keys()];
+  rebuild();
+};
+
+document.addEventListener("keydown",e=>{
+  if($("sheetWrap").classList.contains("open")){ if(e.key==="Escape")closeMore(); return; }
+  if(e.target===card) return; // card handles its own space/enter
+  if(e.key==="ArrowLeft")go(-1);
+  else if(e.key==="ArrowRight")go(1);
+  else if(e.key===" "){e.preventDefault();doFlip();}
+  else if(e.key.toLowerCase()==="g")mark("got");
+  else if(e.key.toLowerCase()==="r")mark("rev");
+});
+
+/* deck selection */
+function loadDeck(i){
+  deckIx=i;
+  CARDS=DECKS[i].cards; CATS=DECKS[i].cats; marks=DECK_MARKS[i];
+  filter="ALL"; reviewOnly=false;
+  $("reviewOnly").setAttribute("aria-pressed","false");
+  $("deckRef").textContent=DECKS[i].ref;
+  $("deckSub").textContent=DECKS[i].sub;
+  document.querySelectorAll(".deckbtn").forEach((b,bi)=>b.setAttribute("aria-selected", bi===deckIx));
+  buildChips();
+  rebuild();
+}
+document.querySelectorAll(".deckbtn").forEach(b=>b.onclick=()=>loadDeck(+b.dataset.deck));
+
+/* init */
+loadDeck(0);
+</script>
+</body>
+</html>
