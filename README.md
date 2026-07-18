@@ -7,7 +7,7 @@ Live at [machinetinker.com](https://machinetinker.com).
 ## Disciplines & tools
 
 - **Electrical** — Ohm's Law, Voltage Divider, Resistor Codes, Voltage Drop, AC Power Triangle, AC Impedance, Power Factor Correction, DOL/Forward-Reverse/Star-Delta Starter Wiring References, Series/Parallel RLC
-- **Mechanical** — Gear Ratio, Beam Deflection, Chain Pitch
+- **Mechanical** — Gear Ratio, Beam Deflection, Chain Pitch, Lever, Inclined Plane, Wheel & Axle, Pulleys, Belt Drive
 - **Fluids & Thermal** — Reynolds Number
 - **Controls** — RC/RL Filter, 555 Timer, Op-Amp Gain
 - **Reference** — Unit Converter, Dimensional Analysis (formula verification + Buckingham π derivation)
@@ -21,7 +21,7 @@ Every tool follows the same interaction model: amber values are ones you **set**
 
 [`course/`](course/index.html) is a standalone 10-module interactive course, "3-Phase Drives & Motors" — linked from the sidebar, separate from the calculator tools above. Each module is its own self-contained HTML page (own styling, no shared dependencies) covering induction motor and VFD behavior hands-on: the rotating field, the torque-speed curve, star/delta, the equivalent circuit, PM/reluctance rotors, V/f control, the rectifier-bus-inverter-PWM chain, vector control, braking/regen, and reflected-wave effects.
 
-[`field-drill.html`](field-drill.html) is a standalone flashcard-style trainer, also linked from the sidebar — five decks (Sensors, Signals, Safety, Drives, Isolate) drilling PNP/NPN sensor wiring, 4-20mA current loops, IO-Link, and related field-electrical fundamentals.
+[`field-drill.html`](field-drill.html) is a standalone flashcard-style trainer, also linked from the sidebar — six decks (Sensors, Signals, Safety, Drives, Isolate, Heaters) drilling PNP/NPN sensor wiring, 4-20mA current loops, IO-Link, thermocouple/RTD wiring, and related field-electrical fundamentals.
 
 ## Running it
 

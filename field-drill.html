@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#16181D">
-<title>Field Drill · Sensors · Signals · Safety · Drives · Isolation</title>
+<title>Field Drill · Maintenance Engineering Card Decks</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -48,8 +48,9 @@
   .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.22em;color:var(--amber);text-transform:uppercase;margin-bottom:11px}
   .backlink{display:inline-flex;align-items:center;gap:5px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-decoration:none;margin-bottom:14px;transition:.15s}
   .backlink:hover{color:var(--amber)}
-  .deckseg{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
-  .deckbtn{flex:1;min-width:0;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:12px;letter-spacing:0;text-transform:uppercase;color:var(--muted);background:transparent;border:none;border-radius:8px;padding:10px 3px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .deckseg{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity}
+  .deckseg::-webkit-scrollbar{display:none}
+  .deckbtn{flex:0 0 auto;scroll-snap-align:center;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:13px;letter-spacing:.01em;text-transform:uppercase;color:var(--muted);background:transparent;border:none;border-radius:8px;padding:11px 15px;cursor:pointer;transition:.15s;white-space:nowrap}
   .deckbtn[aria-selected="true"]{color:var(--bg);background:var(--amber)}
   .deckbtn:not([aria-selected="true"]):hover{color:var(--ink)}
   .deckbtn:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
@@ -261,6 +262,7 @@
       <button class="deckbtn" data-deck="2" role="tab" aria-selected="false">Safety</button>
       <button class="deckbtn" data-deck="3" role="tab" aria-selected="false">Drives</button>
       <button class="deckbtn" data-deck="4" role="tab" aria-selected="false">Isolate</button>
+      <button class="deckbtn" data-deck="5" role="tab" aria-selected="false">Heaters</button>
     </div>
     <div class="deckmeta"><span id="deckRef">ELEC-REF-016</span><span class="dot-sep">·</span><span id="deckSub">PNP / NPN</span></div>
   </header>
@@ -1234,6 +1236,208 @@ const DECKS = [
 `<h4>Trust nothing you didn't prove</h4><p>Someone telling you it's isolated is not proof. Isolations get reversed, the wrong breaker gets locked, tags get moved, drawings mislead. The gap between 'it should be dead' and 'it is dead' is exactly where people are hurt.</p>
 <h4>Dead working is the default</h4><p>Work on it dead unless there's a rare, specifically justified and controlled reason to work live. And 'dead' means you proved it — with your own tester, using prove–test–prove, at the point you're about to touch, just before you touch it.</p>
 <h4>Own the check</h4><p>The only isolation you can rely on is the one you verified yourself, now. It takes a minute and it's the minute that keeps you alive — no deadline, no colleague's assurance and no production pressure is worth skipping it.</p>`
+  ] },
+{ name:"Heater Zones", sub:"thermocouples · RTDs · zone control", ref:"ELEC-REF-021",
+  cats:{
+  "SENSORS":{key:"SENSORS", color:"#E0685A"},
+  "WIRING":{key:"WIRING", color:"#3B8CD1"},
+  "CONTROL":{key:"CONTROL", color:"#8E6FD1"},
+  "FAULT-FINDING":{key:"FAULT-FINDING", color:"#F0B429"}
+  },
+  cards:[
+  { cat:"SENSORS",
+    q:`How does a thermocouple actually work?`,
+    a:`Two dissimilar metals joined at the tip generate a small voltage (the <b>Seebeck effect</b>) proportional to the <b>difference</b> between the hot junction and the reference (cold) junction — not to absolute temperature.`,
+    why:{l:"Key point", t:`It only ever measures a difference. That's exactly why the instrument must know its own terminal temperature — cold junction compensation — to turn that millivolt reading into a real process temperature.`} },
+
+  { cat:"SENSORS",
+    q:`Type K vs Type J — what's the difference?`,
+    a:`<b>K</b> = nickel-chromium / nickel-aluminium, wide range (about −200 to 1260 °C), the general-purpose default. <b>J</b> = iron / constantan, narrower range (to about 750 °C), cheaper — long-standing favourite on plastics extrusion machinery.`,
+    why:{l:"Note", t:`Type J's iron leg rusts, so it suffers in damp or oxidising conditions. Whichever is fitted, the controller must be set to the matching type — a K probe read as J (or the reverse) gives a confidently wrong number.`} },
+
+  { cat:"SENSORS",
+    q:`Thermocouple vs Pt100 — when do you use each?`,
+    a:`<b>Thermocouple</b>: wider range, faster response, tougher, cheap — the norm on barrel and die zones. <b>Pt100 (RTD)</b>: more accurate, stable and repeatable over a narrower range, better where precision matters more than speed or extremes.`,
+    why:{l:"Note", t:`Extrusion mostly runs thermocouples: high temperatures, robust, and the accuracy is good enough. RTDs appear where drift matters — reference measurements, tighter process control, lower-temperature duties.`} },
+
+  { cat:"SENSORS",
+    q:`Pt100 — what does it read at 0 °C and 100 °C?`,
+    a:`<b>100 Ω at 0 °C</b> and about <b>138.5 Ω at 100 °C</b> (IEC 60751, α = 0.00385). It's a resistance that rises with temperature, so the instrument measures ohms rather than millivolts.`,
+    why:{l:"Bench check", t:`Those two figures let you sanity-check a Pt100 with a meter: about 100 Ω in ice, ~109.7 Ω at 25 °C room temperature. Wildly off, or open circuit, and the element or its leads are the problem.`} },
+
+  { cat:"SENSORS",
+    q:`Pt100 — why 3-wire instead of 2-wire?`,
+    a:`To cancel <b>lead resistance</b>. In 2-wire the cable's own ohms add straight onto the element and read as extra temperature. A 3rd wire lets the instrument measure and subtract that lead resistance; 4-wire eliminates it completely.`,
+    wire:"rtdwires",
+    why:{l:"Why", t:`On a Pt100, 0.39 Ω is roughly 1 °C — so a long 2-wire run can read several degrees high. 3-wire is the industrial standard; it assumes all three leads have equal resistance, which is why they must be the same type and length.`} },
+
+  { cat:"WIRING",
+    q:`Type K thermocouple — what are the IEC colours?`,
+    a:`<b>Green</b> sheath, <b>+ green</b>, <b>− white</b>. Under IEC 60584-3 (BS EN 60584-3, the UK/Europe standard) the <b>negative leg is always white</b>, whatever the type.`,
+    wire:"tccolours",
+    why:{l:"Hook", t:`IEC negative = white, every time. So on any IEC thermocouple cable, find the white core and you've found the negative — then the sheath and the other core tell you the type.`} },
+
+  { cat:"WIRING",
+    q:`Same cable, three standards — how do you tell them apart?`,
+    a:`By the <b>negative leg colour</b>. <b>IEC</b> = white. <b>ANSI</b> (US/Australia) = red. <b>BS 1843</b> (obsolete UK, still on old plant) = blue. Type K: IEC green/white · ANSI yellow/red · BS 1843 brown/blue with a red sheath.`,
+    why:{l:"Trap", t:`Old UK machinery can carry BS 1843 while new cable is IEC — in the same panel. Red means negative in ANSI but is the sheath colour of a BS 1843 type K. Identify the standard before you trust any colour.`} },
+
+  { cat:"WIRING",
+    q:`Unmarked thermocouple cable — how can a magnet help?`,
+    a:`<b>Type J's positive leg is pure iron</b>, so it's strongly magnetic — the other leg (constantan) isn't. A magnet identifies both the type and the polarity when the colours are faded, dirty or non-standard.`,
+    why:{l:"Field trick", t:`Handy when insulation has cooked to brown on a hot barrel. On type K, the negative leg (alumel) is the slightly magnetic one — so a magnet still helps, just the other way round. Confirm against a known-good zone if you can.`} },
+
+  { cat:"WIRING",
+    q:`Why can't you extend a thermocouple with ordinary copper wire?`,
+    a:`Joining copper to the thermocouple alloys creates <b>new junctions</b> at the joint, generating their own unwanted voltage. Use matched <b>extension</b> cable (same alloys) or <b>compensating</b> cable (similar EMF, cheaper alloys) — never plain copper.`,
+    why:{l:"Why", t:`Every dissimilar-metal joint is itself a thermocouple. Splice in copper and you've added two uncontrolled junctions in the middle of the run, whose error moves with the temperature of the joint.`} },
+
+  { cat:"WIRING",
+    q:`What is cold junction compensation (CJC)?`,
+    a:`The instrument <b>measures its own terminal temperature</b> and adds that offset, converting the millivolt difference into a true process reading. Without it, every reading would be out by however warm the terminals are.`,
+    why:{l:"Why", t:`A thermocouple only reports the difference between tip and terminals. If CJC fails, or the terminals sit in a hot panel, every zone drifts together by roughly that error — a telltale of a CJC or panel-heat problem rather than a sensor fault.`} },
+
+  { cat:"WIRING",
+    q:`Thermocouple wired backwards — what's the symptom?`,
+    a:`The reading moves the <b>wrong way</b>: it falls as the zone heats, or sits below ambient. The controller then calls for more heat, the reading drops further — a runaway that can cook the zone.`,
+    why:{l:"Danger", t:`Reversed polarity is genuinely dangerous, not just wrong: the control loop drives the wrong way with no natural limit. Check polarity on any zone that heats hard while showing a falling temperature.`, danger:true} },
+
+  { cat:"CONTROL",
+    q:`SSR vs contactor for heater switching — what's the trade-off?`,
+    a:`<b>SSR</b>: no moving parts, switches fast for tight control, silent, long life — but needs a heatsink and costs more. <b>Contactor</b>: cheap and rugged for big loads, but must cycle slowly to survive, so control is coarser.`,
+    why:{l:"Note", t:`Fast cycling is what gives an SSR its tight temperature hold — the zone barely ripples. A contactor doing the same duty would burn its contacts out in months, so it's cycled over minutes instead.`} },
+
+  { cat:"CONTROL",
+    q:`Why does an SSR need independent over-temperature protection?`,
+    a:`Because an SSR typically <b>fails short-circuit — stuck ON</b>. The heater then runs at full power with the controller powerless to stop it. You need a separate high-limit device, with its own sensor and its own contactor, to break the supply.`,
+    wire:"overtemp",
+    why:{l:"Safety", t:`A failed-on heater zone degrades polymer, damages the barrel and is a genuine fire risk. The protection must be independent of the controller and the SSR — same sensor or same switching device means no protection at all.`, danger:true} },
+
+  { cat:"CONTROL",
+    q:`On/off vs PID control — what's the difference?`,
+    a:`<b>On/off</b> switches at a deadband either side of setpoint, so the zone always oscillates. <b>PID</b> modulates the output — <b>P</b> from present error, <b>I</b> to remove steady offset, <b>D</b> to damp the rate of change — holding much closer to setpoint.`,
+    why:{l:"Note", t:`On/off is fine where a couple of degrees of swing doesn't matter. Extrusion needs stable melt temperature — a swinging zone shows up as gauge variation in the film, so barrel and die zones run PID.`} },
+
+  { cat:"CONTROL",
+    q:`What does autotune do, and when does it need redoing?`,
+    a:`It <b>measures the zone's thermal response</b> and calculates P, I and D to suit. Redo it after changing a heater band, sensor or its position, or if the zone starts overshooting or hunting — the tuning belongs to that zone's physical characteristics.`,
+    why:{l:"Method", t:`Every zone has its own mass, heater power and heat loss, so tuning isn't transferable between them. Run autotune warm and undisturbed, not mid-production, and record the resulting values in case they need restoring.`} },
+
+  { cat:"CONTROL",
+    q:`Why do downstream zones sometimes need cooling, not heating?`,
+    a:`<b>Shear heating.</b> The screw does mechanical work on the polymer and that energy becomes heat in the melt. By the metering zone the material can be hotter than setpoint, so barrel blowers pull heat back out.`,
+    why:{l:"Why", t:`Rear zones add heat to melt the solid feed; front zones often fight the heat the screw is generating. It's why a zone can sit with heaters off and blowers running — normal, not a fault.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`One zone won't reach setpoint — what's the sequence?`,
+    a:`Check the <b>fuse</b>, then measure the <b>heater band resistance</b> (open = failed band), then the <b>SSR</b> (failing open won't switch), then the <b>sensor and its wiring</b>. Compare against a neighbouring healthy zone throughout.`,
+    why:{l:"Method", t:`Work power-side first — fuse, heater, switching device — because those are the common failures and the quick checks. Comparing readings with an adjacent identical zone turns 'is this normal?' into a direct answer.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`How do you check a heater band with a meter?`,
+    a:`Isolate, then <b>measure its resistance</b>. Expected R = <b>V² / P</b> — so a 230 V 1500 W band should read about <b>35 Ω</b>. Open circuit means it's failed; also test band-to-earth for insulation breakdown.`,
+    why:{l:"Maths", t:`R = V²/P comes straight from P = V²/R. Knowing the expected figure turns a vague ohm reading into a verdict — and a band that reads roughly right but leaks to earth is failing too.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`Zone reads full scale (or maximum) — what's happened?`,
+    a:`Almost always an <b>open thermocouple</b> — a broken tip, cooked cable or loose terminal. Controllers use <b>upscale burnout</b>: a broken sensor drives the reading to maximum, so the output turns <b>off</b> rather than heating blind.`,
+    why:{l:"Why", t:`It's deliberately fail-safe. Downscale burnout would read cold and drive the heaters full on — exactly the wrong response. Reading at full scale is the controller telling you the sensor is gone, not that the zone is hot.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`Zone at setpoint but the melt isn't right — why?`,
+    a:`The sensor reads <b>where it sits</b>, not the polymer. A tip not bottomed in its pocket, a worn or air-gapped pocket, or a sensor reading the heater band instead of the barrel all give a healthy display over a wrong melt temperature.`,
+    why:{l:"Check", t:`Confirm the probe is fully seated and spring-loaded against the bottom of its pocket. A zone that reaches setpoint suspiciously fast is often sensing the band, not the metal — it satisfies the controller early and under-heats the melt.`} },
+
+  { cat:"FAULT-FINDING",
+    q:`Why must you never start the screw before the soak time is up?`,
+    a:`Zones reaching setpoint means the <b>metal</b> is hot, not that the polymer through the whole barrel is molten. Turning the screw into solid material can <b>shear the shaft, gearbox or screw</b> — expensive, and entirely avoidable.`,
+    why:{l:"Discipline", t:`Heat conducts into the polymer far more slowly than into steel, so the display is ahead of reality. Observe the full soak time from the machine's start-up procedure — the pressure to start early is exactly when this damage happens.`, danger:true} }
+  ],
+  more:[
+// 0 seebeck
+`<h4>The Seebeck effect</h4><p>Join two dissimilar metals and, wherever there is a temperature gradient along them, a small voltage appears. The pair produces a net EMF that depends on the temperature difference between the measuring (hot) junction and the reference (cold) junction where the wires meet the instrument.</p>
+<h4>It measures difference, not temperature</h4><p>This is the point people miss. The millivolts tell you how much hotter the tip is than the terminals — nothing more. Typical output is tiny, on the order of tens of microvolts per degree, which is why good connections and screening matter.</p>
+<h4>The consequence</h4><p>To get an absolute reading, the instrument must know its own terminal temperature and add it back — cold junction compensation. Every thermocouple measurement is really 'terminal temperature plus measured difference'.</p>`,
+// 1 K vs J
+`<h4>Type K</h4><p>Nickel-chromium against nickel-aluminium. Very wide range (roughly −200 to 1260 °C), good in oxidising atmospheres, and the general-purpose industrial default. If a machine just says 'thermocouple', it's most often K.</p>
+<h4>Type J</h4><p>Iron against constantan (copper-nickel). Narrower range (up to about 750 °C), higher output per degree, and cheaper — which is why plastics processing machinery has used it for decades. The iron leg is its weakness: it corrodes in damp or oxidising conditions, so it ages faster in a poor environment.</p>
+<h4>Match the controller</h4><p>The controller converts millivolts to degrees using a table for a specific type. Set it to K with a J probe fitted (or vice versa) and it reads plausibly but wrongly, with the error growing as temperature rises. Always confirm the configured type matches what's actually installed.</p>`,
+// 2 TC vs RTD
+`<h4>Thermocouple strengths</h4><p>Very wide temperature range, fast response (small thermal mass at the tip), physically robust, cheap, and self-powered — it generates its own signal. That combination is why barrel, adapter and die zones almost always run thermocouples.</p>
+<h4>RTD strengths</h4><p>A platinum resistance element is more accurate, more repeatable and drifts far less over time, with a near-linear characteristic. The trade-offs are a narrower range, slower response, higher cost, and the need for an excitation current from the instrument.</p>
+<h4>Choosing</h4><p>Ask what the duty needs. High temperature, rough service, fast response, many zones → thermocouple. Tight accuracy, long-term stability, moderate temperatures → Pt100. Mixing both on one machine is normal, so always check what's actually fitted before assuming.</p>`,
+// 3 Pt100 values
+`<h4>The defining numbers</h4><p>A Pt100 is 100 Ω at 0 °C by definition. Under IEC 60751 with the standard European alpha of 0.00385, it rises to about 138.5 Ω at 100 °C — roughly 0.385 Ω per degree near ambient.</p>
+<h4>Using it on the bench</h4><p>Disconnect and measure the element: about 100 Ω in melting ice, about 109.7 Ω at 25 °C, about 119.4 Ω at 50 °C. Open circuit means a broken element or lead; a few ohms means a short. It's a quick, decisive check.</p>
+<h4>Pt1000</h4><p>Same curve scaled by ten — 1000 Ω at 0 °C, about 3.85 Ω per degree. The higher resistance makes lead resistance proportionally far less significant, which is why Pt1000 is common where cable runs are long or only two wires are available.</p>`,
+// 4 RTD wires
+`<h4>The lead resistance problem</h4><p>An RTD is measured by passing a known current and reading the voltage — but the instrument sees the element <i>plus</i> the cable. In a 2-wire connection that cable resistance is indistinguishable from element resistance, so it reads as extra temperature.</p>
+<h4>How much error</h4><p>About 0.39 Ω per °C on a Pt100. A long run of thin cable easily adds an ohm or two, so a 2-wire Pt100 can read several degrees high — a constant offset that looks like a calibration problem but is really the wiring.</p>
+<h4>3-wire and 4-wire</h4><p>3-wire adds a sense lead so the instrument can measure one lead's resistance and subtract it — assuming all leads are equal, which means same type, same length, same route. 4-wire drives current through one pair and measures voltage across the other, so lead resistance drops out entirely: the laboratory-grade method.</p>`,
+// 5 IEC type K colours
+`<h4>The IEC scheme</h4><p>IEC 60584-3 — in the UK, BS EN 60584-3 — is the standard you'll meet on modern European kit. Type K is green: green sheath, green positive, white negative. Type J is black: black sheath, black positive, white negative.</p>
+<h4>The one rule to remember</h4><p>Under IEC the negative conductor is always white, regardless of thermocouple type. So the white core is your polarity reference every time; the sheath colour then identifies the type (K green, J black, T brown, N pink, E violet).</p>
+<h4>Connectors too</h4><p>The moulded plug and socket bodies follow the same colour scheme, so a green connector should be carrying a type K under IEC. Useful at a glance — but confirm, because a previous repair may have fitted whatever was in the drawer.</p>`,
+// 6 three standards
+`<h4>Three schemes, one panel</h4><p>UK plants accumulate cable over decades. Modern European kit is IEC 60584-3; imported or US/Australian equipment may carry ANSI MC96.1; and older British machinery still runs BS 1843, which is obsolete but very much alive on legacy plant.</p>
+<h4>Tell them apart by the negative</h4><p>Each standard has a fixed negative colour: IEC white, ANSI red, BS 1843 blue. Find the negative and you've identified the scheme. For type K that gives IEC green/white with green sheath, ANSI yellow/red with yellow sheath, and BS 1843 brown/blue with a red sheath.</p>
+<h4>The traps</h4><p>Red is the negative in ANSI but the sheath colour of a BS 1843 type K — so 'red' means opposite things depending on the standard. Worse, an ANSI type J is red and white in a black jacket, which is identical to the usual 2-wire Pt100 colours; people have fitted one believing it was the other. Identify the standard first, then read the colours.</p>`,
+// 7 magnet trick
+`<h4>Why it works</h4><p>The alloys differ magnetically. Type J's positive leg is essentially pure iron and is strongly attracted to a magnet, while its constantan negative leg is not — so a small magnet sorts polarity instantly and confirms you're looking at a type J.</p>
+<h4>On type K</h4><p>The negative leg (alumel, nickel-aluminium) is weakly magnetic while the positive (chromel, nickel-chromium) is not. Less dramatic than type J, but still a usable check when the colours are unreadable.</p>
+<h4>When you'd use it</h4><p>Cooked insulation on a hot barrel goes uniformly brown, faded or charred, and old repairs may have used whatever cable was to hand. The magnet is a physical property that doesn't fade. Confirm against a known-good zone, and re-sleeve or label the cable while you're there.</p>`,
+// 8 extension cable
+`<h4>Every joint is a junction</h4><p>A thermocouple works because dissimilar metals meeting produce a voltage. Splice copper into the run and you've made two new dissimilar-metal junctions at that joint — each generating its own EMF that adds to or subtracts from the real signal.</p>
+<h4>Extension vs compensating</h4><p>Extension cable (e.g. type KX) uses the same alloys as the thermocouple, so the run is electrically continuous and there's no spurious junction. Compensating cable (e.g. KCA/KCB) uses cheaper alloys chosen to produce a very similar EMF over a limited temperature range — cheaper, adequate where conditions are moderate.</p>
+<h4>Why the error moves</h4><p>The worst part of a copper splice is that the error depends on the joint's own temperature. Warm the junction box and the reading shifts — an intermittent, temperature-dependent fault that's maddening to chase. Use the right cable and connectors and the problem never exists.</p>`,
+// 9 CJC
+`<h4>Closing the loop</h4><p>Since the thermocouple reports only the difference between tip and terminals, the instrument measures its own terminal block temperature with a separate sensor and adds it to the measured difference. That sum is the actual process temperature.</p>
+<h4>What goes wrong</h4><p>If the CJC sensor fails, or the terminals are much hotter than the instrument assumes — a panel with no ventilation, a drive dumping heat next to the controller — every channel using that terminal block shifts.</p>
+<h4>The diagnostic pattern</h4><p>One zone reading oddly points at that zone's sensor or wiring. <i>All</i> zones on an instrument drifting together by a similar amount points at cold junction compensation or panel temperature. That distinction saves a lot of wasted sensor swaps.</p>`,
+// 10 reversed polarity
+`<h4>What happens</h4><p>Swap the legs and the millivolt signal reverses. As the zone genuinely heats, the instrument sees a growing negative difference and displays a falling temperature — often below ambient.</p>
+<h4>Why it's dangerous</h4><p>The controller sees a zone that's too cold and calls for heat. Heating makes the displayed value drop further, so it demands still more. There's no natural limit to the loop — it drives the heaters hard while insisting the zone is cold.</p>
+<h4>Spotting and fixing</h4><p>The signature is unmistakable: the reading moves the wrong way when you apply heat, or reads impossibly low on a hot machine. Isolate, swap the two conductors at the sensor or terminals, and confirm the reading now rises with heat. And this is the exact scenario an independent over-temperature cut-out exists to catch.</p>`,
+// 11 SSR vs contactor
+`<h4>Solid state</h4><p>An SSR switches with semiconductors — no contacts to arc or wear. It can cycle every mains half-cycle if needed, giving very smooth power delivery and tight temperature control, and it's silent. The costs: it dissipates heat so it needs proper heatsinking and airflow, it leaks a small current when off, and it's dearer per amp.</p>
+<h4>Electromechanical</h4><p>A contactor is cheap, rugged and handles large currents with negligible losses. But every operation wears the contacts, so the control must cycle slowly — typically tens of seconds to minutes — which means the zone temperature visibly ripples between switching events.</p>
+<h4>Choosing on the line</h4><p>Barrel and die zones that need stable melt temperature get SSRs. Big, tolerant loads where a few degrees of swing don't matter can stay on contactors. Whichever is fitted, remember the zone's control quality is limited by how fast its switching device can safely cycle.</p>`,
+// 12 SSR failure / over-temp
+`<h4>The failure mode that matters</h4><p>SSRs overwhelmingly fail short-circuit — the output stays conducting. From the controller's point of view it has switched the heater off, but full power keeps flowing. Reducing the setpoint, or even switching the controller off, changes nothing.</p>
+<h4>Why independence is the whole point</h4><p>Protection that shares the failed component is no protection. The high-limit device needs its own temperature sensor, its own logic, and its own switching element (usually a separate contactor in series with the heater supply) so it can break the circuit regardless of the controller or the SSR.</p>
+<h4>What it prevents</h4><p>An uncontrolled heater zone degrades polymer, can damage the barrel and screw, and is a real fire risk. A manual-reset high-limit thermostat also forces someone to attend and investigate rather than letting the machine quietly cycle through a fault. Test these devices periodically — protection nobody has proven is just an assumption.</p>`,
+// 13 on/off vs PID
+`<h4>On/off</h4><p>The simplest scheme: heat below setpoint, off above, with a deadband to stop the output chattering. The temperature inevitably swings around setpoint — the wider the deadband and the slower the zone, the bigger the swing and the more overshoot.</p>
+<h4>PID</h4><p>Proportional acts on the present error, delivering less power as the zone approaches setpoint. Integral accumulates residual error over time to eliminate the steady-state offset proportional alone leaves. Derivative responds to the rate of change, damping overshoot on a fast-moving zone.</p>
+<h4>Why extrusion cares</h4><p>Melt temperature drives viscosity, and viscosity drives output and gauge. A zone swinging a few degrees translates into thickness variation in the film, so barrel, adapter and die zones run PID for a stable, boring temperature trace — which is exactly what you want.</p>`,
+// 14 autotune
+`<h4>What it's doing</h4><p>Autotune deliberately disturbs the zone — typically cycling the output and watching how far and how fast the temperature moves — then calculates P, I and D terms from that observed response. It's characterising the physical zone: its mass, heater power and heat losses.</p>
+<h4>When to redo it</h4><p>Any time the zone's physical character changes: a replaced heater band of different rating, a new or repositioned sensor, altered insulation or cladding. Also when behaviour degrades — overshoot on start-up, hunting, or sluggish recovery after a load change.</p>
+<h4>Doing it properly</h4><p>Run it under conditions resembling normal operation, with the machine settled and no production running, since the tune reflects whatever conditions it saw. Note the resulting values before and after so you can restore known-good settings if a tune goes badly.</p>`,
+// 15 shear heating
+`<h4>Where the heat comes from</h4><p>The screw does substantial mechanical work on the polymer — compressing, shearing and mixing it. That work converts to heat within the melt itself. On a well-running extruder a large share of the energy in the melt comes from the screw, not the heater bands.</p>
+<h4>The zone-by-zone picture</h4><p>Rear zones near the feed genuinely need heat to melt incoming solid material. Moving forward, shear heating accumulates, so the middle and metering zones may need little or no added heat — and can exceed setpoint, at which point barrel blowers pull heat out.</p>
+<h4>What looks like a fault but isn't</h4><p>A front zone sitting with heaters off and its blower running is normal at production speed. It also explains why zones behave differently at start-up (all heating) than at full output (front zones cooling) — and why raising screw speed can push melt temperature up without touching a single setpoint.</p>`,
+// 16 zone won't heat
+`<h4>Work the power path first</h4><p>The likely failures are all on the power side and quick to check: the zone's fuse or MCB, the heater band itself, then the switching device. Start there before suspecting the controller or sensor.</p>
+<h4>The checks</h4><p>Isolate and measure the heater band's resistance — open circuit means a failed band (they fail regularly, being cooked and vibrated for years). If the band is sound, check the SSR or contactor is actually switching: an SSR can fail open as well as short, and a contactor coil or contacts can fail. Then look at the sensor and its wiring.</p>
+<h4>Compare with a neighbour</h4><p>Adjacent zones are usually identical in rating and duty, so a healthy one is a free reference — for resistance, for how fast it climbs, for controller output percentage. 'Is 34 Ω right?' becomes trivial when the zone next door reads the same.</p>`,
+// 17 heater band check
+`<h4>The calculation</h4><p>From P = V²/R, expected resistance is R = V²/P. So a 230 V 1500 W band should read about 35 Ω; a 230 V 1000 W band about 53 Ω. Read the rating off the band or the schedule, calculate, then measure.</p>
+<h4>What the readings mean</h4><p>Open circuit — the element has failed, the commonest heater fault. Close to the calculated value — the element is fine, look elsewhere. Significantly low — possible shorted turns, so it will draw excess current and may trip its fuse.</p>
+<h4>Don't stop at resistance</h4><p>Also test insulation between the element and the band body/earth. A band that reads correct end-to-end but leaks to earth is breaking down internally — it will trip an RCD, give nuisance earth faults, and is on its way out. Isolate and prove dead before any of this.</p>`,
+// 18 upscale burnout
+`<h4>Deliberate behaviour</h4><p>When a thermocouple goes open circuit, the controller input floats. Controllers are designed to drive that condition to full scale (upscale burnout), so the displayed temperature slams to maximum.</p>
+<h4>Why upscale</h4><p>A reading above setpoint makes the controller turn the heater output off. Downscale burnout would show a cold zone and demand full heat into a zone it can no longer measure — the dangerous option. Upscale is chosen so the failure mode is safe.</p>
+<h4>What to check</h4><p>The sensor tip, the cable (especially where it passes near hot metal or flexes), and the terminals at both ends. A reading pinned at maximum is the controller reporting a broken sensor, not a hot zone — treat it as a wiring fault, and check the connector at the barrel first, since that's where heat and vibration do their worst.</p>`,
+// 19 sensor placement vs melt temperature
+`<h4>It reads its own tip</h4><p>A thermocouple reports the temperature of the metal touching its junction — nothing else. What the controller displays is the temperature at that specific point, which may or may not represent the polymer flowing past inside.</p>
+<h4>How the gap opens up</h4><p>A probe not bottomed in its pocket sits in an air gap, and air is a poor conductor — so it lags and reads whatever is nearest. A worn, corroded or oversized pocket does the same. Worst case, a short probe or a deep pocket leaves the tip sensing the heater band rather than the barrel wall, so it reads the heat source instead of the process.</p>
+<h4>The telltale</h4><p>A zone that reaches setpoint noticeably faster than its neighbours is suspicious — it's satisfying the controller early from a hot spot, then the heaters back off and the melt runs cold. Check the probe is fully home and spring-loaded against the bottom of the pocket, that the pocket is clean, and that the probe length matches. Compare warm-up rate against an identical zone to confirm.</p>`,
+// 20 soak time
+`<h4>Steel heats faster than plastic</h4><p>The barrel is metal in direct contact with the heater bands, so it reaches setpoint relatively quickly. The polymer inside is a poor conductor and heats slowly from the barrel wall inwards — especially a large slug of solidified material left from the last shutdown.</p>
+<h4>What the display isn't telling you</h4><p>'All zones at setpoint' means the metal is at temperature. The material in the middle of the channel can still be solid or stiff. Soak time exists to let that heat penetrate the polymer, which takes far longer than getting the steel hot.</p>
+<h4>The consequence of rushing</h4><p>Turning the screw into unmelted material puts enormous torque through the screw, thrust bearing and gearbox — you can shear a screw, wreck the gearbox or destroy the thrust assembly. That's weeks of downtime and serious money, entirely avoidably. Follow the machine's stated soak time; if the line is under pressure, that pressure is exactly what makes people start early.</p>`
   ] }
 ];
 let CARDS, CATS;
@@ -1512,6 +1716,102 @@ function schematic(kind){
       <text x="140" y="166" fill="${muted}" font-size="9" text-anchor="middle">every conductor to every other + earth = 10 tests</text>
     </svg>`;
   }
+  if(kind==="tccolours"){
+    return `<svg viewBox="0 0 280 176" role="img" aria-label="Type K thermocouple colours across IEC, ANSI and BS 1843">
+      <text x="14" y="18" fill="${muted}" font-size="9">TYPE K</text>
+      <text x="128" y="18" fill="${muted}" font-size="8" text-anchor="middle">+ leg</text>
+      <text x="196" y="18" fill="${muted}" font-size="8" text-anchor="middle">− leg</text>
+      <text x="256" y="18" fill="${muted}" font-size="8" text-anchor="middle">sheath</text>
+
+      <text x="14" y="46" fill="#E9E7E2" font-size="10">IEC</text>
+      <text x="14" y="57" fill="${muted}" font-size="7">60584-3</text>
+      <rect x="100" y="34" width="56" height="16" rx="3" fill="#3E9B57"/>
+      <text x="128" y="46" fill="#0E1A12" font-size="8" text-anchor="middle">GREEN</text>
+      <rect x="168" y="34" width="56" height="16" rx="3" fill="#E9E7E2"/>
+      <text x="196" y="46" fill="#16181D" font-size="8" text-anchor="middle">WHITE</text>
+      <circle cx="256" cy="42" r="7" fill="#3E9B57"/>
+
+      <text x="14" y="86" fill="#E9E7E2" font-size="10">ANSI</text>
+      <text x="14" y="97" fill="${muted}" font-size="7">MC96.1</text>
+      <rect x="100" y="74" width="56" height="16" rx="3" fill="#E3B62C"/>
+      <text x="128" y="86" fill="#1B1707" font-size="8" text-anchor="middle">YELLOW</text>
+      <rect x="168" y="74" width="56" height="16" rx="3" fill="#D0443A"/>
+      <text x="196" y="86" fill="#1B0C0A" font-size="8" text-anchor="middle">RED</text>
+      <circle cx="256" cy="82" r="7" fill="#E3B62C"/>
+
+      <text x="14" y="126" fill="#E9E7E2" font-size="10">BS 1843</text>
+      <text x="14" y="137" fill="${muted}" font-size="7">obsolete</text>
+      <rect x="100" y="114" width="56" height="16" rx="3" fill="#8A5A33"/>
+      <text x="128" y="126" fill="#F0E6DC" font-size="8" text-anchor="middle">BROWN</text>
+      <rect x="168" y="114" width="56" height="16" rx="3" fill="#3A6FA8"/>
+      <text x="196" y="126" fill="#EAF2FA" font-size="8" text-anchor="middle">BLUE</text>
+      <circle cx="256" cy="122" r="7" fill="#C0392B"/>
+
+      <line x1="14" y1="148" x2="266" y2="148" stroke="${muted}" stroke-width="0.8"/>
+      <text x="140" y="166" fill="${AM}" font-size="9" text-anchor="middle">identify by the − leg: IEC white · ANSI red · BS blue</text>
+    </svg>`;
+  }
+  if(kind==="rtdwires"){
+    return `<svg viewBox="0 0 280 170" role="img" aria-label="Pt100 two, three and four wire connections">
+      <text x="44" y="20" fill="#E9E7E2" font-size="10" text-anchor="middle">2-WIRE</text>
+      <rect x="26" y="30" width="36" height="22" rx="3" fill="#232730" stroke="${RD}" stroke-width="1.4"/>
+      <text x="44" y="45" fill="${RD}" font-size="8" text-anchor="middle">Pt100</text>
+      <line x1="30" y1="52" x2="30" y2="86" stroke="${muted}" stroke-width="2"/>
+      <line x1="58" y1="52" x2="58" y2="86" stroke="${muted}" stroke-width="2"/>
+      <text x="44" y="102" fill="${RD}" font-size="8" text-anchor="middle">lead R adds</text>
+      <text x="44" y="113" fill="${RD}" font-size="8" text-anchor="middle">to reading</text>
+
+      <text x="140" y="20" fill="#E9E7E2" font-size="10" text-anchor="middle">3-WIRE</text>
+      <rect x="122" y="30" width="36" height="22" rx="3" fill="#232730" stroke="${AM}" stroke-width="1.4"/>
+      <text x="140" y="45" fill="${AM}" font-size="8" text-anchor="middle">Pt100</text>
+      <line x1="126" y1="52" x2="126" y2="86" stroke="${muted}" stroke-width="2"/>
+      <line x1="140" y1="52" x2="140" y2="86" stroke="${AM}" stroke-width="2"/>
+      <line x1="154" y1="52" x2="154" y2="86" stroke="${muted}" stroke-width="2"/>
+      <text x="140" y="102" fill="${AM}" font-size="8" text-anchor="middle">sense lead</text>
+      <text x="140" y="113" fill="${AM}" font-size="8" text-anchor="middle">cancels lead R</text>
+
+      <text x="236" y="20" fill="#E9E7E2" font-size="10" text-anchor="middle">4-WIRE</text>
+      <rect x="218" y="30" width="36" height="22" rx="3" fill="#232730" stroke="${GN}" stroke-width="1.4"/>
+      <text x="236" y="45" fill="${GN}" font-size="8" text-anchor="middle">Pt100</text>
+      <line x1="220" y1="52" x2="220" y2="86" stroke="${muted}" stroke-width="2"/>
+      <line x1="230" y1="52" x2="230" y2="86" stroke="${GN}" stroke-width="2"/>
+      <line x1="242" y1="52" x2="242" y2="86" stroke="${GN}" stroke-width="2"/>
+      <line x1="252" y1="52" x2="252" y2="86" stroke="${muted}" stroke-width="2"/>
+      <text x="236" y="102" fill="${GN}" font-size="8" text-anchor="middle">lead R fully</text>
+      <text x="236" y="113" fill="${GN}" font-size="8" text-anchor="middle">eliminated</text>
+
+      <text x="140" y="140" fill="${muted}" font-size="9" text-anchor="middle">Pt100 ≈ 0.39 Ω per °C — lead ohms read as degrees</text>
+      <text x="140" y="158" fill="${muted}" font-size="9" text-anchor="middle">100 Ω at 0 °C · 138.5 Ω at 100 °C</text>
+    </svg>`;
+  }
+  if(kind==="overtemp"){
+    return `<svg viewBox="0 0 280 186" role="img" aria-label="independent high-limit over-temperature protection">
+      <rect x="12" y="26" width="74" height="34" rx="4" fill="#232730" stroke="${muted}" stroke-width="1.4"/>
+      <text x="49" y="41" fill="#E9E7E2" font-size="9" text-anchor="middle">CONTROLLER</text>
+      <text x="49" y="53" fill="${muted}" font-size="8" text-anchor="middle">TC 1</text>
+      <line x1="86" y1="43" x2="112" y2="43" stroke="${muted}" stroke-width="2"/>
+      <rect x="112" y="26" width="52" height="34" rx="4" fill="#232730" stroke="${RD}" stroke-width="1.4"/>
+      <text x="138" y="41" fill="#E9E7E2" font-size="9" text-anchor="middle">SSR</text>
+      <text x="138" y="53" fill="${RD}" font-size="7" text-anchor="middle">fails SHORT</text>
+      <line x1="164" y1="43" x2="190" y2="43" stroke="${muted}" stroke-width="2"/>
+
+      <rect x="12" y="104" width="74" height="34" rx="4" fill="#232730" stroke="${GN}" stroke-width="1.4"/>
+      <text x="49" y="119" fill="#E9E7E2" font-size="9" text-anchor="middle">HIGH LIMIT</text>
+      <text x="49" y="131" fill="${GN}" font-size="8" text-anchor="middle">TC 2 · own sensor</text>
+      <line x1="86" y1="121" x2="112" y2="121" stroke="${GN}" stroke-width="2"/>
+      <rect x="112" y="104" width="52" height="34" rx="4" fill="#232730" stroke="${GN}" stroke-width="1.4"/>
+      <text x="138" y="125" fill="#E9E7E2" font-size="9" text-anchor="middle">KM</text>
+      <line x1="164" y1="121" x2="190" y2="121" stroke="${GN}" stroke-width="2"/>
+
+      <line x1="190" y1="43" x2="190" y2="121" stroke="${muted}" stroke-width="2"/>
+      <line x1="190" y1="82" x2="222" y2="82" stroke="${muted}" stroke-width="2"/>
+      <rect x="222" y="66" width="44" height="32" rx="4" fill="#232730" stroke="${AM}" stroke-width="1.4"/>
+      <text x="244" y="86" fill="${AM}" font-size="9" text-anchor="middle">HEATER</text>
+
+      <text x="140" y="162" fill="${muted}" font-size="9" text-anchor="middle">two sensors · two switching devices · in series</text>
+      <text x="140" y="177" fill="${GN}" font-size="9" text-anchor="middle">SSR stuck on → KM still breaks the supply</text>
+    </svg>`;
+  }
   return "";
 }
 
@@ -1523,7 +1823,7 @@ let flipped=false;
 let reviewOnly=false;
 let marks={}; // active deck's recall marks
 let deckIx=0;
-const DECK_MARKS=[{},{},{},{},{}]; // per-deck marks, preserved when switching
+const DECK_MARKS=[{},{},{},{},{},{}]; // per-deck marks, preserved when switching
 
 const $=id=>document.getElementById(id);
 const card=$("card");
@@ -1715,7 +2015,10 @@ function loadDeck(i){
   $("reviewOnly").setAttribute("aria-pressed","false");
   $("deckRef").textContent=DECKS[i].ref;
   $("deckSub").textContent=DECKS[i].sub;
-  document.querySelectorAll(".deckbtn").forEach((b,bi)=>b.setAttribute("aria-selected", bi===deckIx));
+  document.querySelectorAll(".deckbtn").forEach((b,bi)=>{
+    b.setAttribute("aria-selected", bi===deckIx);
+    if(bi===deckIx && b.scrollIntoView) b.scrollIntoView({block:"nearest",inline:"center",behavior:"smooth"});
+  });
   buildChips();
   rebuild();
 }
